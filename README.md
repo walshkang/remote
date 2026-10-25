@@ -30,4 +30,13 @@ A unified local-first smart home remote control web app designed for anyone on y
 
 ## Setup & Development
 
-*Coming soon.*
+Requires [uv](https://docs.astral.sh/uv/) (it provisions Python 3.12 automatically).
+
+```bash
+uv run uvicorn main:app --host 0.0.0.0 --port 8000 --workers 1
+uv run pytest
+```
+
+Then open `http://<this-machine-ip>:8000` on any device on the same Wi-Fi. Keep `--workers 1`: device connections (e.g. the Denon's single Telnet slot) are singletons.
+
+Modules are enabled with `REMOTE_MODULES` (comma-separated, default `demo`). See [docs/ARCHITECTURE_AND_PLAN.md](docs/ARCHITECTURE_AND_PLAN.md).
