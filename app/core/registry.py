@@ -11,8 +11,8 @@ log = logging.getLogger(__name__)
 
 
 def load_modules() -> list[RemoteModule]:
-    """REMOTE_MODULES="demo,denon" -> imports app.modules.<id>.module.Module."""
-    names = [n.strip() for n in os.getenv("REMOTE_MODULES", "demo").split(",") if n.strip()]
+    """REMOTE_MODULES="denon,demo" -> imports app.modules.<id>.module.Module."""
+    names = [n.strip() for n in os.getenv("REMOTE_MODULES", "denon,demo").split(",") if n.strip()]
     modules: list[RemoteModule] = []
     for name in names:
         try:
