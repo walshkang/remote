@@ -8,6 +8,7 @@ import asyncio
 import logging
 import re
 from typing import Any, Awaitable, Callable
+import xml.etree.ElementTree as ET
 
 import httpx
 
@@ -147,7 +148,6 @@ class DenonDriver:
             async with httpx.AsyncClient(timeout=4.0) as client:
                 resp = await client.get(url)
                 if resp.status_code == 200:
-                    import xml.etree.ElementTree as ET
                     root = ET.fromstring(resp.text)
                     funcs = [v.text.strip() for v in root.findall("./InputFuncList/value") if v.text]
                     renames = []
