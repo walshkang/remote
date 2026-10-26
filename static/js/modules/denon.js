@@ -27,16 +27,19 @@ export function mount(el, { send, onState, lockedSlider }) {
     <!-- Volume Controls -->
     <div style="margin-bottom:16px;">
       <div style="display:flex; justify-content:space-between; align-items:flex-end; margin-bottom:8px;">
-        <span class="muted">Volume</span>
+        <span class="muted">Master Volume</span>
         <div style="display:flex; gap:8px; align-items:baseline;">
           <button id="denon-mute" style="width:auto; height:auto; padding:4px 10px; font-size:12px; border-radius:6px; background:#252c37;">Mute</button>
-          <div class="big" id="denon-vol-text" style="font-size:32px;">-45.0 dB</div>
+          <div style="display:flex; align-items:baseline;">
+            <div class="big" id="denon-vol-text" style="font-size:32px;">-30.0 dB</div>
+            <div id="denon-vol-sub" class="muted" style="font-size:13px; margin-left:6px;">(50)</div>
+          </div>
         </div>
       </div>
 
-      <div class="row" style="margin-bottom:8px;">
-        <button id="denon-vol-down" style="flex:1;">−</button>
-        <button id="denon-vol-up" style="flex:1;">+</button>
+      <div class="row" style="margin-bottom:10px;">
+        <button id="denon-vol-down" style="flex:1; font-size:16px; font-weight:600; height:50px;">− 1.0 dB</button>
+        <button id="denon-vol-up" style="flex:1; font-size:16px; font-weight:600; height:50px;">+ 1.0 dB</button>
       </div>
       <input type="range" min="0" max="80" step="0.5" id="denon-slider">
     </div>
@@ -59,6 +62,7 @@ export function mount(el, { send, onState, lockedSlider }) {
   const powerBtn = el.querySelector("#denon-power");
   const muteBtn = el.querySelector("#denon-mute");
   const volText = el.querySelector("#denon-vol-text");
+  const volSub = el.querySelector("#denon-vol-sub");
   const npBox = el.querySelector("#denon-np");
   const npTrack = el.querySelector("#denon-np-track");
   const npArtist = el.querySelector("#denon-np-artist");
@@ -66,8 +70,18 @@ export function mount(el, { send, onState, lockedSlider }) {
   const ipInput = el.querySelector("#denon-ip-input");
   const saveIpBtn = el.querySelector("#denon-save-ip");
 
+  function formatDb(val) {
+    const rel = val - 80.0;
+    const sign = rel > 0 ? "+" : "";
+    return `${sign}${rel.toFixed(1)} dB`;
+  }
+
   const slider = lockedSlider(el.querySelector("#denon-slider"), {
-    onInput: (v) => send("denon", "volume_set", { value: v }),
+    onInput: (v) => {
+      volText.textContent = formatDb(v);
+      volSub.textContent = `(${v.toFixed(1)})`;
+      send("denon", "volume_set", { value: v });
+    },
   });
 
   el.querySelector("#denon-vol-down").addEventListener("click", () =>
@@ -123,8 +137,10 @@ export function mount(el, { send, onState, lockedSlider }) {
     }
 
     // Volume
-    volText.textContent = s.volume_db || `${s.volume} dB`;
-    slider.set(s.volume || 35);
+    const val = typeof s.volume === "number" ? s.volume : 50.0;
+    volText.textContent = s.volume_db || formatDb(val);
+    volSub.textContent = `(${val.toFixed(1)})`;
+    slider.set(val);
 
     // Now Playing
     if (s.now_playing && (s.now_playing.track || s.now_playing.artist)) {

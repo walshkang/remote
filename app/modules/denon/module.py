@@ -17,7 +17,7 @@ class Module(RemoteModule):
 
     def __init__(self) -> None:
         super().__init__()
-        self.host = os.getenv("DENON_HOST", "").strip()
+        self.host = os.getenv("DENON_HOST", "192.168.1.226").strip()
         self.driver: DenonDriver | None = None
         self._coalescer: Coalescer | None = None
 
@@ -27,8 +27,8 @@ class Module(RemoteModule):
             "host": self.host,
             "connected": False,
             "power": "UNKNOWN",
-            "volume": 35.0,
-            "volume_db": "-45.0 dB",
+            "volume": 50.0,
+            "volume_db": "-30.0 dB",
             "mute": False,
             "source": "UNKNOWN",
             "now_playing": {
