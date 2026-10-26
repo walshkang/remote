@@ -3,9 +3,31 @@ services:
     build: .
     container_name: remote
     restart: unless-stopped
+    expose:
+      - "8000"
     ports:
-      - "8000:8000"
+      - "127.0.0.1:8000:8000"
     env_file:
       - .env
     volumes:
       - ./data:/app/data
+
+  caddy:
+    image: caddy:2-alpine
+    container_name: remote-caddy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      - DOMAIN=${DOMAIN:-remote.walshkang.com}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - remote
+
+volumes:
+  caddy_data:
+  caddy_config:

@@ -1,0 +1,3 @@
+{$DOMAIN:remote.walshkang.com} {
+    reverse_proxy remote:8000
+}
