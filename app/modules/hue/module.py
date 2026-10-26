@@ -102,9 +102,13 @@ class Module(RemoteModule):
             gid = room["group_id"]
 
             async def send(v, gid=gid):
-                await d.put("grouped_light", gid, {"on": {"on": True}, "dimming": {"brightness": v}})
+                await d.put(
+                    "grouped_light",
+                    gid,
+                    {"on": {"on": True}, "dimming": {"brightness": v}, "dynamics": {"duration": 150}},
+                )
 
-            self._coalesce(f"g:{gid}", 0.25, send, b)
+            self._coalesce(f"g:{gid}", 0.15, send, b)
 
         elif action == "room_color":
             room = next(r for r in m.rooms if r["id"] == payload["room"])
@@ -113,6 +117,21 @@ class Module(RemoteModule):
                 if m.lights[lid]["has_color"]:
                     m.lights[lid]["xy"], m.lights[lid]["on"] = list(xy), True
                     await self._send_light_color(lid, xy)
+            await self._optimistic(client_id)
+
+        elif action == "room_temp":
+            room = next(r for r in m.rooms if r["id"] == payload["room"])
+            mirek_req = int(payload["mirek"])
+            for lid in room["light_ids"]:
+                light = m.lights[lid]
+                if light["has_ct"]:
+                    mirek = int(max(light["mirek_min"], min(light["mirek_max"], mirek_req)))
+                    light["mirek"], light["xy"], light["on"] = mirek, None, True
+
+                    async def send_ct(v, lid=lid):
+                        await d.put("light", lid, {"on": {"on": True}, "color_temperature": {"mirek": v}})
+
+                    self._coalesce(f"t:{lid}", 0.15, send_ct, mirek)
             await self._optimistic(client_id)
 
         elif action == "scene_recall":
@@ -131,7 +150,11 @@ class Module(RemoteModule):
             await self._optimistic(client_id)
 
             async def send(v, lid=lid):
-                await d.put("light", lid, {"on": {"on": True}, "dimming": {"brightness": v}})
+                await d.put(
+                    "light",
+                    lid,
+                    {"on": {"on": True}, "dimming": {"brightness": v}, "dynamics": {"duration": 150}},
+                )
 
             self._coalesce(f"l:{lid}", 0.1, send, b)
 
@@ -146,7 +169,7 @@ class Module(RemoteModule):
             lid = payload["light"]
             light = m.lights[lid]
             mirek = int(max(light["mirek_min"], min(light["mirek_max"], int(payload["mirek"]))))
-            light["mirek"], light["on"] = mirek, True
+            light["mirek"], light["xy"], light["on"] = mirek, None, True
             await self._optimistic(client_id)
 
             async def send(v, lid=lid):

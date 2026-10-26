@@ -1,15 +1,33 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-theme="auto">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="theme-color" content="#0b0d10">
+  <meta name="theme-color" id="meta-theme-color" content="#0b0d11">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <title>Remote</title>
   <link rel="stylesheet" href="/static/css/styles.css">
 </head>
 <body>
-  <header><h1>Remote</h1><span id="conn" class="pill off">connecting…</span></header>
-  <main id="cards"></main>
+  <div class="app-shell">
+    <header class="app-header">
+      <div class="brand">
+        <h1>Remote</h1>
+        <span id="conn" class="pill off" role="status" aria-live="polite">
+          <span class="status-dot" aria-hidden="true"></span>
+          <span id="conn-text">Connecting…</span>
+        </span>
+      </div>
+      <div class="header-actions">
+        <button id="theme-toggle" class="icon-btn" type="button" aria-label="Theme: Auto" title="Switch theme (Auto / Light / Dark)">
+          <span id="theme-icon" aria-hidden="true">◐</span>
+          <span id="theme-label" class="theme-label">Auto</span>
+        </button>
+      </div>
+    </header>
+    <main id="cards" aria-label="Smart home controls"></main>
+  </div>
   <script type="module" src="/static/js/core.js"></script>
 </body>
 </html>

@@ -1,68 +1,108 @@
-export function mount(el, { send, onState, lockedSlider }) {
+export function mount(el, { send, onState, lockedSlider, bindStepRepeat }) {
+  el.setAttribute("aria-label", "Denon Home Theater Receiver");
   el.innerHTML = `
-    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
-      <h2 style="margin:0;">Denon AVR-X1200W</h2>
-      <div style="display:flex; gap:8px; align-items:center;">
-        <span id="denon-status" class="pill off" style="font-size:11px;">Offline</span>
-        <button id="denon-power" style="width:42px; height:42px; font-size:18px; border-radius:10px;">⏻</button>
+    <div class="card-header">
+      <div class="card-title-group">
+        <h2>Living Room Audio</h2>
+        <span class="card-subtitle">Denon AVR-X1200W</span>
+      </div>
+      <div class="room-actions">
+        <span id="denon-status" class="pill off" role="status">
+          <span class="status-dot" aria-hidden="true"></span>
+          <span id="denon-status-text">Offline</span>
+        </span>
+        <button id="denon-power" class="power-btn" type="button" aria-label="Receiver power" aria-pressed="false" title="Toggle power">
+          ⏻
+        </button>
       </div>
     </div>
 
     <!-- IP Setup if not configured -->
-    <div id="denon-config-box" style="display:none; margin-bottom:16px; background:#1c212a; padding:12px; border-radius:12px;">
-      <div style="font-size:13px; margin-bottom:8px; color:var(--muted);">Enter Denon Receiver IP:</div>
-      <div style="display:flex; gap:8px;">
-        <input type="text" id="denon-ip-input" placeholder="e.g. 192.168.1.184" style="flex:1; background:#101317; border:1px solid #2b323e; color:#fff; padding:8px 12px; border-radius:8px;">
-        <button id="denon-save-ip" style="width:auto; height:auto; padding:8px 16px; font-size:14px;">Connect</button>
+    <div id="denon-config-box" class="callout" hidden>
+      <label for="denon-ip-input" class="muted">Enter Denon Receiver IP address:</label>
+      <div class="input-row">
+        <input type="text" id="denon-ip-input" class="text-input" placeholder="e.g. 192.168.1.226" inputmode="url" autocomplete="off">
+        <button id="denon-save-ip" class="primary-btn" type="button">Connect</button>
       </div>
     </div>
 
     <!-- Now Playing Display -->
-    <div id="denon-np" style="display:none; background:#10141b; border-left:3px solid var(--accent); padding:10px 14px; border-radius:8px; margin-bottom:16px;">
-      <div style="font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--accent); margin-bottom:2px;">Now Playing</div>
-      <div id="denon-np-track" style="font-size:15px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;"></div>
-      <div id="denon-np-artist" style="font-size:13px; color:var(--muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;"></div>
+    <div id="denon-np" class="now-playing" hidden aria-live="polite">
+      <div class="np-meta">
+        <div class="np-badge">Now Playing</div>
+        <div id="denon-np-track" class="np-track"></div>
+        <div id="denon-np-artist" class="np-artist"></div>
+      </div>
     </div>
 
-    <!-- Volume Controls -->
-    <div style="margin-bottom:16px;">
-      <div style="display:flex; justify-content:space-between; align-items:flex-end; margin-bottom:8px;">
-        <span class="muted">Master Volume</span>
-        <div style="display:flex; gap:8px; align-items:baseline;">
-          <button id="denon-mute" style="width:auto; height:auto; padding:4px 10px; font-size:12px; border-radius:6px; background:#252c37;">Mute</button>
-          <div style="display:flex; align-items:baseline;">
-            <div class="big" id="denon-vol-text" style="font-size:32px;">-30.0 dB</div>
-            <div id="denon-vol-sub" class="muted" style="font-size:13px; margin-left:6px;">(50)</div>
-          </div>
+    <!-- Human-Centered Volume Controls -->
+    <div style="margin-bottom: 18px;">
+      <div class="vol-header">
+        <span class="section-label" style="margin:0;">Master Volume</span>
+        <div class="vol-readout" aria-live="polite">
+          <span class="vol-primary" id="denon-vol-text">-30.0 dB</span>
+          <span class="vol-secondary" id="denon-vol-sub">Level 50.0</span>
         </div>
       </div>
 
-      <div class="row" style="margin-bottom:10px;">
-        <button id="denon-vol-down" style="flex:1; font-size:16px; font-weight:600; height:50px;">− 1.0 dB</button>
-        <button id="denon-vol-up" style="flex:1; font-size:16px; font-weight:600; height:50px;">+ 1.0 dB</button>
+      <div class="fill-slider" id="denon-slider-wrap">
+        <div class="fill-slider-bar"></div>
+        <div class="fill-slider-meta">
+          <span class="fill-slider-label">
+            <span id="denon-vol-icon" aria-hidden="true">🔊</span>
+            <span id="denon-vol-zone">Comfort range</span>
+          </span>
+          <span class="fill-slider-value">50.0 / 80</span>
+        </div>
+        <input
+          type="range"
+          min="0"
+          max="80"
+          step="0.5"
+          value="50"
+          id="denon-slider"
+          aria-label="Master Volume"
+        >
       </div>
-      <input type="range" min="0" max="80" step="0.5" id="denon-slider">
+
+      <div class="vol-stepper" role="group" aria-label="Volume fine adjustment">
+        <button id="denon-vol-down" class="step-btn" type="button" aria-label="Decrease volume by 1 decibel">
+          − 1.0 dB
+        </button>
+        <button id="denon-mute" class="mute-btn" type="button" aria-pressed="false" aria-label="Mute audio">
+          <span id="denon-mute-icon" aria-hidden="true">🔇</span>
+          <span id="denon-mute-label">Mute</span>
+        </button>
+        <button id="denon-vol-up" class="step-btn" type="button" aria-label="Increase volume by 1 decibel">
+          + 1.0 dB
+        </button>
+      </div>
     </div>
 
     <!-- Source Selector -->
     <div>
-      <div class="muted" style="margin-bottom:8px;">Input Source</div>
-      <div style="display:grid; grid-template-columns: repeat(3, 1fr); gap:8px;" id="denon-sources">
-        <button data-src="MPLAY" style="width:100%; height:44px; font-size:13px;">Apple TV</button>
-        <button data-src="TV" style="width:100%; height:44px; font-size:13px;">TV Audio</button>
-        <button data-src="SAT/CBL" style="width:100%; height:44px; font-size:13px;">CBL/SAT</button>
-        <button data-src="GAME" style="width:100%; height:44px; font-size:13px;">Game/PS5</button>
-        <button data-src="BD" style="width:100%; height:44px; font-size:13px;">Blu-ray</button>
-        <button data-src="BT" style="width:100%; height:44px; font-size:13px;">Bluetooth</button>
+      <div class="section-label">Input Source</div>
+      <div class="source-grid" id="denon-sources" role="group" aria-label="Input Source">
+        <button class="source-btn" type="button" data-src="MPLAY" aria-pressed="false">Apple TV</button>
+        <button class="source-btn" type="button" data-src="TV" aria-pressed="false">TV Audio</button>
+        <button class="source-btn" type="button" data-src="GAME" aria-pressed="false">Game / PS5</button>
+        <button class="source-btn" type="button" data-src="SAT/CBL" aria-pressed="false">CBL / SAT</button>
+        <button class="source-btn" type="button" data-src="BD" aria-pressed="false">Blu-ray</button>
+        <button class="source-btn" type="button" data-src="BT" aria-pressed="false">Bluetooth</button>
       </div>
     </div>
   `;
 
   const statusEl = el.querySelector("#denon-status");
+  const statusTextEl = el.querySelector("#denon-status-text");
   const powerBtn = el.querySelector("#denon-power");
   const muteBtn = el.querySelector("#denon-mute");
+  const muteLabel = el.querySelector("#denon-mute-label");
   const volText = el.querySelector("#denon-vol-text");
   const volSub = el.querySelector("#denon-vol-sub");
+  const volIcon = el.querySelector("#denon-vol-icon");
+  const volZone = el.querySelector("#denon-vol-zone");
+  const sliderWrap = el.querySelector("#denon-slider-wrap");
   const npBox = el.querySelector("#denon-np");
   const npTrack = el.querySelector("#denon-np-track");
   const npArtist = el.querySelector("#denon-np-artist");
@@ -76,20 +116,40 @@ export function mount(el, { send, onState, lockedSlider }) {
     return `${sign}${rel.toFixed(1)} dB`;
   }
 
+  function describeZone(val, muted) {
+    if (muted) return "Audio muted";
+    if (val < 30) return "Quiet";
+    if (val <= 58) return "Comfort range";
+    return "Loud / Cinema";
+  }
+
+  let isMuted = false;
+
+  const updateVolumeReadout = (v) => {
+    const db = formatDb(v);
+    volText.textContent = isMuted ? "Muted" : db;
+    volSub.textContent = isMuted ? `${db} (${v.toFixed(1)})` : `Level ${v.toFixed(1)}`;
+    volZone.textContent = describeZone(v, isMuted);
+    volIcon.textContent = isMuted ? "🔇" : v < 25 ? "🔈" : v < 55 ? "🔉" : "🔊";
+  };
+
   const slider = lockedSlider(el.querySelector("#denon-slider"), {
+    formatValue: (v) => `${v.toFixed(1)} (${formatDb(v)})`,
     onInput: (v) => {
-      volText.textContent = formatDb(v);
-      volSub.textContent = `(${v.toFixed(1)})`;
+      updateVolumeReadout(v);
       send("denon", "volume_set", { value: v });
     },
   });
 
-  el.querySelector("#denon-vol-down").addEventListener("click", () =>
-    send("denon", "volume_delta", { delta: -1.0 })
-  );
-  el.querySelector("#denon-vol-up").addEventListener("click", () =>
-    send("denon", "volume_delta", { delta: 1.0 })
-  );
+  const stepDownBtn = el.querySelector("#denon-vol-down");
+  const stepUpBtn = el.querySelector("#denon-vol-up");
+  if (bindStepRepeat) {
+    bindStepRepeat(stepDownBtn, () => send("denon", "volume_delta", { delta: -1.0 }));
+    bindStepRepeat(stepUpBtn, () => send("denon", "volume_delta", { delta: 1.0 }));
+  } else {
+    stepDownBtn.addEventListener("click", () => send("denon", "volume_delta", { delta: -1.0 }));
+    stepUpBtn.addEventListener("click", () => send("denon", "volume_delta", { delta: 1.0 }));
+  }
 
   powerBtn.addEventListener("click", () => send("denon", "power_toggle"));
   muteBtn.addEventListener("click", () => send("denon", "mute_toggle"));
@@ -104,62 +164,43 @@ export function mount(el, { send, onState, lockedSlider }) {
   });
 
   onState("denon", (s) => {
-    // Config box display
-    if (!s.configured) {
-      configBox.style.display = "block";
-    } else {
-      configBox.style.display = "none";
-    }
+    configBox.hidden = Boolean(s.configured);
 
-    // Status Pill
+    const isOn = s.power === "ON";
     if (s.connected) {
-      statusEl.textContent = s.power === "ON" ? "On" : "Standby";
-      statusEl.className = "pill";
-      statusEl.style.background = s.power === "ON" ? "#1f6f43" : "#3b4554";
+      statusTextEl.textContent = isOn ? "On" : "Standby";
+      statusEl.className = isOn ? "pill" : "pill neutral";
     } else {
-      statusEl.textContent = s.configured ? "Connecting…" : "Not Configured";
+      statusTextEl.textContent = s.configured ? "Connecting…" : "Setup needed";
       statusEl.className = "pill off";
     }
 
-    // Power Button
-    powerBtn.style.background = s.power === "ON" ? "#267a4a" : "#232932";
-    powerBtn.style.color = s.power === "ON" ? "#8affbe" : "var(--fg)";
+    powerBtn.setAttribute("aria-pressed", String(isOn));
 
-    // Mute Button
-    if (s.mute) {
-      muteBtn.style.background = "#842029";
-      muteBtn.style.color = "#ffb3b8";
-      muteBtn.textContent = "MUTED";
-    } else {
-      muteBtn.style.background = "#252c37";
-      muteBtn.style.color = "var(--fg)";
-      muteBtn.textContent = "Mute";
-    }
+    isMuted = Boolean(s.mute);
+    muteBtn.setAttribute("aria-pressed", String(isMuted));
+    muteLabel.textContent = isMuted ? "Muted" : "Mute";
+    sliderWrap.classList.toggle("is-muted", isMuted);
 
-    // Volume
     const val = typeof s.volume === "number" ? s.volume : 50.0;
-    volText.textContent = s.volume_db || formatDb(val);
-    volSub.textContent = `(${val.toFixed(1)})`;
     slider.set(val);
+    volText.textContent = isMuted ? "Muted" : s.volume_db || formatDb(val);
+    volSub.textContent = isMuted
+      ? `${s.volume_db || formatDb(val)} (${val.toFixed(1)})`
+      : `Level ${val.toFixed(1)}`;
+    volZone.textContent = describeZone(val, isMuted);
+    volIcon.textContent = isMuted ? "🔇" : val < 25 ? "🔈" : val < 55 ? "🔉" : "🔊";
 
-    // Now Playing
     if (s.now_playing && (s.now_playing.track || s.now_playing.artist)) {
-      npBox.style.display = "block";
+      npBox.hidden = false;
       npTrack.textContent = s.now_playing.track || "Playing";
       npArtist.textContent = s.now_playing.artist || s.now_playing.album || "";
     } else {
-      npBox.style.display = "none";
+      npBox.hidden = true;
     }
 
-    // Active Source Highlight
     el.querySelectorAll("#denon-sources button").forEach((b) => {
-      if (b.dataset.src === s.source) {
-        b.style.background = "var(--accent)";
-        b.style.color = "#fff";
-      } else {
-        b.style.background = "#232932";
-        b.style.color = "var(--fg)";
-      }
+      b.setAttribute("aria-pressed", String(b.dataset.src === s.source));
     });
   });
 }

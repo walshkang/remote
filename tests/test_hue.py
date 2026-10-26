@@ -46,3 +46,35 @@ def test_hs_to_xy():
     assert y > 0.6
     x, y = hs_to_xy(0, 0)  # white ~ D65
     assert abs(x - 0.3127) < 0.02
+
+
+def test_room_temp_action():
+    import asyncio
+    from app.core.state_bus import StateBus
+    from app.core.ws_manager import WSManager
+    from app.modules.hue.driver import HueDriver
+    from app.modules.hue.module import Module
+
+    async def run():
+        bus = StateBus(WSManager())
+        mod = Module()
+        bus.register(mod.module_id, mod.initial_state())
+        await super(Module, mod).start(bus)
+        mod.driver = HueDriver("127.0.0.1", "test-key", mod._on_change)
+        mod.driver.model.build(RES)
+
+        puts = []
+
+        async def fake_put(rtype, rid, body):
+            puts.append((rtype, rid, body))
+
+        mod.driver.put = fake_put
+        await mod.handle_action("room_temp", {"room": "R1", "mirek": 370}, client_id="c1")
+        await asyncio.sleep(0.2)
+        await mod.stop()
+
+        assert mod.driver.model.lights["L1"]["mirek"] == 370
+        assert mod.driver.model.lights["L1"]["xy"] is None
+        assert any(r == ("light", "L1", {"on": {"on": True}, "color_temperature": {"mirek": 370}}) for r in puts)
+
+    asyncio.run(run())
