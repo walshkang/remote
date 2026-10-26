@@ -31,6 +31,15 @@ class Module(RemoteModule):
             "volume_db": "-30.0 dB",
             "mute": False,
             "source": "UNKNOWN",
+            "sources": [
+                {"code": "MPLAY", "name": "Turntable", "icon": "🎛️"},
+                {"code": "TV", "name": "TV Audio", "icon": "🔊"},
+                {"code": "SAT/CBL", "name": "CD Player", "icon": "💿"},
+                {"code": "BT", "name": "Bluetooth", "icon": "ᛒ"},
+                {"code": "NET", "name": "Online Music", "icon": "🌐"},
+                {"code": "AUX1", "name": "Front AUX", "icon": "🔌"},
+            ],
+            "zone_name": "LIVING RM",
             "now_playing": {
                 "track": "",
                 "artist": "",

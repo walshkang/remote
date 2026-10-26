@@ -83,12 +83,12 @@ export function mount(el, { send, onState, lockedSlider, bindStepRepeat }) {
     <div>
       <div class="section-label">Input Source</div>
       <div class="source-grid" id="denon-sources" role="group" aria-label="Input Source">
-        <button class="source-btn" type="button" data-src="MPLAY" aria-pressed="false">📺 Apple TV</button>
+        <button class="source-btn" type="button" data-src="MPLAY" aria-pressed="false">🎛️ Turntable</button>
         <button class="source-btn" type="button" data-src="TV" aria-pressed="false">🔊 TV Audio</button>
-        <button class="source-btn" type="button" data-src="GAME" aria-pressed="false">🎮 PS5 / Game</button>
-        <button class="source-btn" type="button" data-src="SAT/CBL" aria-pressed="false">📡 Cable / SAT</button>
-        <button class="source-btn" type="button" data-src="BD" aria-pressed="false">💿 Blu-ray</button>
+        <button class="source-btn" type="button" data-src="SAT/CBL" aria-pressed="false">💿 CD Player</button>
         <button class="source-btn" type="button" data-src="BT" aria-pressed="false">ᛒ Bluetooth</button>
+        <button class="source-btn" type="button" data-src="NET" aria-pressed="false">🌐 Online Music</button>
+        <button class="source-btn" type="button" data-src="AUX1" aria-pressed="false">🔌 Front AUX</button>
       </div>
     </div>
   `;
@@ -156,8 +156,14 @@ export function mount(el, { send, onState, lockedSlider, bindStepRepeat }) {
   powerBtn.addEventListener("click", () => send("denon", "power_toggle"));
   muteBtn.addEventListener("click", () => send("denon", "mute_toggle"));
 
-  el.querySelectorAll("#denon-sources button").forEach((b) => {
-    b.addEventListener("click", () => send("denon", "set_source", { source: b.dataset.src }));
+  const sourcesGrid = el.querySelector("#denon-sources");
+  const subtitleEl = el.querySelector(".card-subtitle");
+
+  sourcesGrid.addEventListener("click", (e) => {
+    const btn = e.target.closest(".source-btn");
+    if (!btn) return;
+    const src = btn.getAttribute("data-src");
+    if (src) send("denon", "set_source", { source: src });
   });
 
   saveIpBtn.addEventListener("click", () => {
@@ -165,8 +171,30 @@ export function mount(el, { send, onState, lockedSlider, bindStepRepeat }) {
     if (val) send("denon", "set_host", { host: val });
   });
 
+  let currentSourcesSig = "";
+
   onState("denon", (s) => {
     configBox.hidden = Boolean(s.configured);
+
+    if (s.zone_name && subtitleEl) {
+      subtitleEl.textContent = `Denon AVR-X1200W · ${s.zone_name}`;
+    }
+
+    // Dynamic sources from Denon receiver
+    if (Array.isArray(s.sources) && s.sources.length > 0) {
+      const sig = JSON.stringify(s.sources.map((x) => [x.code, x.name]));
+      if (sig !== currentSourcesSig) {
+        currentSourcesSig = sig;
+        sourcesGrid.innerHTML = s.sources
+          .map(
+            (src) =>
+              `<button class="source-btn" type="button" data-src="${src.code}" aria-pressed="${
+                src.code === s.source
+              }">${src.icon || "🎵"} ${src.name}</button>`
+          )
+          .join("");
+      }
+    }
 
     const isOn = s.power === "ON";
     if (s.connected) {
@@ -201,7 +229,7 @@ export function mount(el, { send, onState, lockedSlider, bindStepRepeat }) {
       npBox.hidden = true;
     }
 
-    el.querySelectorAll("#denon-sources button").forEach((b) => {
+    sourcesGrid.querySelectorAll(".source-btn").forEach((b) => {
       b.setAttribute("aria-pressed", String(b.dataset.src === s.source));
     });
   });

@@ -87,6 +87,9 @@ class DenonDriver:
                 await self.send_raw("SI?\r")
                 await self.send_raw("NSE\r")
 
+                # Fetch custom source renames and friendly name from HTTP XML API
+                asyncio.create_task(self._refresh_source_config())
+
                 # Read line stream
                 while self._running:
                     line = await self._reader.readuntil(b"\r")
@@ -136,6 +139,75 @@ class DenonDriver:
                 await client.get(url)
         except Exception as e:
             log.debug("HTTP fallback send failed: %s", e)
+
+    async def _refresh_source_config(self) -> None:
+        """Fetch friendly name and custom input source renames from Denon's HTTP XML API."""
+        url = f"http://{self.host}:{self.http_port}/goform/formMainZone_MainZoneXmlStatus.xml"
+        try:
+            async with httpx.AsyncClient(timeout=4.0) as client:
+                resp = await client.get(url)
+                if resp.status_code == 200:
+                    import xml.etree.ElementTree as ET
+                    root = ET.fromstring(resp.text)
+                    funcs = [v.text.strip() for v in root.findall("./InputFuncList/value") if v.text]
+                    renames = []
+                    for v in root.findall("./RenameSource/value"):
+                        sub = v.find("value")
+                        text = (sub.text if sub is not None and sub.text else v.text) or ""
+                        renames.append(text.strip())
+                    deletes = [v.text.strip() if v.text else "USE" for v in root.findall("./SourceDelete/value")]
+
+                    code_map = {
+                        "Media Player": "MPLAY",
+                        "TV AUDIO": "TV",
+                        "CBL/SAT": "SAT/CBL",
+                        "Bluetooth": "BT",
+                        "NETWORK": "NET",
+                        "AUX": "AUX1",
+                        "iPod/USB": "USB/IPOD",
+                        "Blu-ray": "BD",
+                        "GAME": "GAME",
+                        "DVD": "DVD",
+                        "TUNER": "TUNER",
+                    }
+
+                    sources = []
+                    for i, func in enumerate(funcs):
+                        if i < len(deletes) and deletes[i] == "DEL":
+                            continue
+                        name = renames[i] if i < len(renames) and renames[i] else func
+                        code = code_map.get(func, func)
+
+                        icon = "🎵"
+                        nl = name.lower()
+                        if "turntable" in nl or "record" in nl or "phono" in nl or "vinyl" in nl:
+                            icon = "🎛️"
+                        elif "cd" in nl:
+                            icon = "💿"
+                        elif "tv" in nl:
+                            icon = "🔊"
+                        elif "game" in nl or "ps5" in nl or "xbox" in nl:
+                            icon = "🎮"
+                        elif "aux" in nl:
+                            icon = "🔌"
+                        elif "bluetooth" in nl or code == "BT":
+                            icon = "ᛒ"
+                        elif "online" in nl or "net" in nl or code == "NET":
+                            icon = "🌐"
+                        elif "apple" in nl:
+                            icon = "📺"
+
+                        sources.append({"code": code, "name": name, "icon": icon, "func": func})
+
+                    zone_el = root.find("./Zone/value")
+                    zone_name = zone_el.text.strip() if zone_el is not None and zone_el.text else ""
+
+                    patch = {"sources": sources}
+                    if zone_name:
+                        patch["zone_name"] = zone_name
+                    await self.on_state_change(patch)
+        except Exception as e:
+            log.debug("Failed fetching Denon source renames from HTTP: %s", e)
 
     async def _parse_line(self, line: str) -> None:
         """Parses a single response line from Denon AVR."""
