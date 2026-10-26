@@ -865,3 +865,30 @@ main {
     animation-duration: 0.01ms !important;
   }
 }
+
+/* Litter-Robot: meters + hold-to-confirm button */
+.lr-meter { height: 6px; border-radius: 3px; background: var(--slider-track); margin-top: 8px; overflow: hidden; }
+.lr-meter-fill { height: 100%; width: 0; background: var(--accent); border-radius: 3px; transition: width 0.4s ease; }
+.lr-meter-fill.ok { background: var(--success); }
+.lr-meter-fill.warn { background: var(--amber); }
+.lr-meter-fill.bad { background: var(--danger); }
+
+.hold-btn {
+  position: relative; overflow: hidden; width: 100%; min-height: 52px;
+  background: var(--surface-2); border: 1px solid var(--border-strong);
+  border-radius: 14px; color: var(--fg); font-weight: 600; font-size: 15px;
+  touch-action: none; -webkit-user-select: none; user-select: none;
+  -webkit-touch-callout: none;
+}
+.hold-btn:disabled { opacity: 0.5; }
+.hold-fill {
+  position: absolute; inset: 0; width: 0; background: var(--accent-soft);
+  border-right: 2px solid var(--accent); transition: width 0.15s ease-out;
+}
+.hold-btn.holding .hold-fill { width: 100%; transition: width 1s linear; }
+.hold-label { position: relative; }
+.lr-notice {
+  margin-top: 10px; padding: 10px 12px; border-radius: 12px;
+  background: var(--accent-soft); font-size: 14px;
+}
+.lr-notice[hidden], #lr-error[hidden] { display: none; }
