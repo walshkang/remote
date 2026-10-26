@@ -17,7 +17,15 @@ class Module(RemoteModule):
 
     def __init__(self) -> None:
         super().__init__()
-        self.host = os.getenv("DENON_HOST", "192.168.1.226").strip()
+        raw_host = os.getenv("DENON_HOST", "192.168.1.226").strip()
+        self.telnet_port = int(os.getenv("DENON_TELNET_PORT", "23"))
+        self.http_port = int(os.getenv("DENON_HTTP_PORT", "80"))
+        if ":" in raw_host:
+            parts = raw_host.split(":")
+            self.host = parts[0]
+            self.telnet_port = int(parts[1])
+        else:
+            self.host = raw_host
         self.driver: DenonDriver | None = None
         self._coalescer: Coalescer | None = None
 
@@ -55,11 +63,22 @@ class Module(RemoteModule):
             await self._init_driver(self.host)
 
     async def _init_driver(self, host: str) -> None:
-        self.host = host
+        if ":" in host:
+            parts = host.split(":")
+            self.host = parts[0]
+            self.telnet_port = int(parts[1])
+        else:
+            self.host = host
+
         if self.driver:
             await self.driver.stop()
 
-        self.driver = DenonDriver(self.host, on_state_change=self._on_driver_state)
+        self.driver = DenonDriver(
+            self.host,
+            telnet_port=self.telnet_port,
+            http_port=self.http_port,
+            on_state_change=self._on_driver_state,
+        )
         await self.driver.start()
         await self.bus.update(self.module_id, {"configured": True, "host": self.host})
 
