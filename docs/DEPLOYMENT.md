@@ -177,7 +177,7 @@ You should see:
 
 Because the Denon AVR (`192.168.1.226`) and Philips Hue Bridge (`192.168.1.154`) sit on your home Wi-Fi subnet, an outside cloud VM cannot reach private `192.168.1.x` addresses directly without a secure path.
 
-### Option A: Free Tailscale Subnet Router (Recommended)
+### Option A: Free Tailscale Subnet Router
 1. Install [Tailscale](https://tailscale.com) on any always-on machine at home (Mac, Raspberry Pi, Apple TV running tvOS 17+, or a home server).
 2. Enable subnet routing on your home machine:
    ```bash
@@ -188,15 +188,33 @@ Because the Denon AVR (`192.168.1.226`) and Philips Hue Bridge (`192.168.1.154`)
    curl -fsSL https://tailscale.com/install.sh | sh
    sudo tailscale up --accept-routes
    ```
-4. Now your Oracle Cloud VM can reach `192.168.1.226` and `192.168.1.154` as if it were plugged into your home router! Enable `denon` and `hue` in `.env`:
-   ```bash
-   REMOTE_MODULES=denon,hue,litter_robot,buildinglink,demo
-   ```
-   Restart with `docker compose restart remote`.
+4. Now your Oracle Cloud VM can reach `192.168.1.226` and `192.168.1.154` through the subnet router.
 
-### Option B: Router Port-Forwarding (Source-IP Locked)
-If you do not want Tailscale:
-1. Log into your home router (`http://192.168.1.1`).
-2. Add a port-forward rule for TCP Port `23` forwarding to `192.168.1.226`.
-3. Set the **Source IP Filter** to *strictly* your Oracle VM's public IP (`129.153.x.x`). All other internet IPs are dropped by the router firewall.
-4. Point `DENON_HOST=<YOUR_HOME_PUBLIC_IP>` in `.env`.
+### Option B: Router Port-Forwarding (Standalone, No Always-On Computer Needed)
+To keep the remote functioning 24/7 without needing your Mac or any home computer awake:
+1. Log into your home router (e.g. Verizon Fios at `https://192.168.1.1`).
+2. Add the following port-forwarding rules:
+   * **Denon Telnet (Control)**: External Port `2323` ➔ Internal `192.168.1.226:23` (TCP)
+   * **Denon HTTP (XML Renames)**: External Port `8023` ➔ Internal `192.168.1.226:80` (TCP)
+   * **Philips Hue Bridge**: External Port `8443` ➔ Internal `192.168.1.154:443` (TCP)
+3. *(Optional / Recommended)*: Restrict source IP filter on each rule to only your Oracle VM public IP.
+4. Set in `.env` on your Oracle VM:
+   ```bash
+   DENON_HOST=<YOUR_HOME_PUBLIC_IP>
+   DENON_TELNET_PORT=2323
+   DENON_HTTP_PORT=8023
+   HUE_HOST=<YOUR_HOME_PUBLIC_IP>:8443
+   ```
+5. Rebuild/restart container: `sudo docker compose up -d --build`.
+
+---
+
+## 7. Frontend Security & IP Whitelisting
+
+By default, Caddy is configured with an IP whitelist to restrict access:
+* **Home Wi-Fi (`HOME_IP`)**: Direct seamless access without authentication.
+* **Tailscale (`100.64.0.0/10`)**: Direct access when connecting from your phone or laptop with Tailscale enabled outside the house.
+* **All other internet visitors**: Receive an immediate `403 Access Denied` response.
+
+Set `HOME_IP` in `.env` to match your home public IP (check with `curl api.ipify.org`).
+

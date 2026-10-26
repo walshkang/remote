@@ -30,7 +30,14 @@ A unified local-first smart home remote control web app designed for anyone on y
                                  Theater      Litter-Robot
 ```
 
-## Setup & Development
+## Production Deployment
+
+The app is deployed to an Oracle Cloud Always Free VM behind Caddy with automatic SSL:
+* **Live URL**: `https://remote.walshkang.com`
+* **Security**: Whitelisted to Home Wi-Fi (`HOME_IP`) and Tailscale (`100.64.0.0/10`).
+* **Deployment Guide**: See [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) for step-by-step setup (DNS, Oracle firewalls, Caddy, and router port forwarding).
+
+## Setup & Local Development
 
 Requires [uv](https://docs.astral.sh/uv/) (it provisions Python 3.12 automatically).
 
@@ -39,6 +46,7 @@ uv run uvicorn main:app --host 0.0.0.0 --port 8000 --workers 1
 uv run pytest
 ```
 
-Then open `http://<this-machine-ip>:8000` on any device on the same Wi-Fi. Keep `--workers 1`: device connections (e.g. the Denon's single Telnet slot) are singletons.
+Then open `http://localhost:8000`. Keep `--workers 1`: device connections (e.g. the Denon's single Telnet slot) are singletons.
 
-Modules are enabled with `REMOTE_MODULES` (comma-separated, default `demo`). See [docs/ARCHITECTURE_AND_PLAN.md](docs/ARCHITECTURE_AND_PLAN.md).
+Modules are configured via `.env` and enabled with `REMOTE_MODULES` (comma-separated, default `demo`). See [docs/ARCHITECTURE_AND_PLAN.md](docs/ARCHITECTURE_AND_PLAN.md).
+
