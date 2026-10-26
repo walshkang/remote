@@ -617,6 +617,7 @@ export function mount(el, { send, onState, lockedSlider }) {
     }
 
     if (!s.rooms || !s.rooms.length) return;
+    currentRooms = s.rooms || [];
 
     const sig = JSON.stringify([
       s.rooms.map((r) => [r.id, r.light_ids, r.scenes.map((x) => x.id)]),

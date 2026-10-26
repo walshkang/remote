@@ -83,12 +83,12 @@ export function mount(el, { send, onState, lockedSlider, bindStepRepeat }) {
     <div>
       <div class="section-label">Input Source</div>
       <div class="source-grid" id="denon-sources" role="group" aria-label="Input Source">
-        <button class="source-btn" type="button" data-src="MPLAY" aria-pressed="false">Apple TV</button>
-        <button class="source-btn" type="button" data-src="TV" aria-pressed="false">TV Audio</button>
-        <button class="source-btn" type="button" data-src="GAME" aria-pressed="false">Game / PS5</button>
-        <button class="source-btn" type="button" data-src="SAT/CBL" aria-pressed="false">CBL / SAT</button>
-        <button class="source-btn" type="button" data-src="BD" aria-pressed="false">Blu-ray</button>
-        <button class="source-btn" type="button" data-src="BT" aria-pressed="false">Bluetooth</button>
+        <button class="source-btn" type="button" data-src="MPLAY" aria-pressed="false">📺 Apple TV</button>
+        <button class="source-btn" type="button" data-src="TV" aria-pressed="false">🔊 TV Audio</button>
+        <button class="source-btn" type="button" data-src="GAME" aria-pressed="false">🎮 PS5 / Game</button>
+        <button class="source-btn" type="button" data-src="SAT/CBL" aria-pressed="false">📡 Cable / SAT</button>
+        <button class="source-btn" type="button" data-src="BD" aria-pressed="false">💿 Blu-ray</button>
+        <button class="source-btn" type="button" data-src="BT" aria-pressed="false">ᛒ Bluetooth</button>
       </div>
     </div>
   `;
@@ -134,12 +134,14 @@ export function mount(el, { send, onState, lockedSlider, bindStepRepeat }) {
   };
 
   const slider = lockedSlider(el.querySelector("#denon-slider"), {
-    formatValue: (v) => `${v.toFixed(1)} (${formatDb(v)})`,
+    throttleMs: 60,
+    formatValue: (v) => formatDb(v),
     onInput: (v) => {
       updateVolumeReadout(v);
       send("denon", "volume_set", { value: v });
     },
   });
+
 
   const stepDownBtn = el.querySelector("#denon-vol-down");
   const stepUpBtn = el.querySelector("#denon-vol-up");
