@@ -362,13 +362,19 @@ main {
   border-radius: 14px;
   background: var(--slider-track);
   border: 1px solid var(--border);
-  overflow: hidden;
+  overflow: visible; /* Allows floating value bubble above track */
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding: 0 14px;
   user-select: none;
   touch-action: pan-y;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.fill-slider.is-dragging {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent-soft);
 }
 
 .fill-slider.compact {
@@ -382,13 +388,14 @@ main {
   inset: 0 auto 0 0;
   width: var(--fill, 0%);
   background: var(--fill-color, var(--slider-fill));
-  transition: width 0.06s linear, background-color 0.2s ease;
+  border-radius: 13px;
+  transition: width 0.04s linear, background-color 0.2s ease;
   pointer-events: none;
 }
 
 .fill-slider.is-off .fill-slider-bar,
 .fill-slider.is-muted .fill-slider-bar {
-  opacity: 0.32;
+  opacity: 0.25;
 }
 
 .fill-slider-meta {
@@ -413,7 +420,45 @@ main {
 .fill-slider-value {
   font-variant-numeric: tabular-nums;
   color: var(--fg);
-  opacity: 0.9;
+  opacity: 0.92;
+}
+
+/* Floating Thumb Bubble that hovers directly above the user's thumb */
+.fill-slider-bubble {
+  position: absolute;
+  bottom: calc(100% + 9px);
+  left: var(--fill, 0%);
+  transform: translateX(-50%) scale(0.8);
+  background: var(--surface-3);
+  color: var(--fg);
+  border: 1px solid var(--border-strong);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.32);
+  padding: 3px 8px;
+  border-radius: 7px;
+  font-size: 12px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.12s ease, transform 0.14s cubic-bezier(0.34, 1.56, 0.64, 1);
+  white-space: nowrap;
+  z-index: 20;
+}
+
+.fill-slider-bubble::after {
+  content: "";
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border-width: 4px;
+  border-style: solid;
+  border-color: var(--surface-3) transparent transparent transparent;
+}
+
+.fill-slider.is-dragging .fill-slider-bubble {
+  opacity: 1;
+  transform: translateX(-50%) scale(1);
 }
 
 .fill-slider input[type="range"] {
@@ -426,6 +471,7 @@ main {
   cursor: pointer;
   z-index: 2;
 }
+
 
 /* ==========================================================================
    Color & White Ambiance Pickers (Hue-style)
@@ -892,3 +938,209 @@ main {
   background: var(--accent-soft); font-size: 14px;
 }
 .lr-notice[hidden], #lr-error[hidden] { display: none; }
+
+/* ==========================================================================
+   Header Package Badge & Card Highlighting
+   ========================================================================== */
+.pill.pkg-pill {
+  background: var(--amber-soft);
+  color: var(--amber);
+  text-decoration: none;
+  cursor: pointer;
+  border-color: rgba(245, 158, 11, 0.35);
+}
+
+.pill.pkg-pill:hover {
+  background: rgba(245, 158, 11, 0.3);
+}
+
+.card.highlight-amber {
+  border-color: rgba(245, 158, 11, 0.45);
+  box-shadow: 0 4px 24px rgba(245, 158, 11, 0.12);
+}
+
+/* ==========================================================================
+   BuildingLink Deliveries UI/UX: Quiet Zero State vs Active Deliveries
+   ========================================================================== */
+.bl-quiet-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.bl-quiet-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.bl-quiet-icon {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: var(--success-soft);
+  color: var(--success);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.bl-quiet-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--fg);
+  line-height: 1.25;
+}
+
+.bl-quiet-meta {
+  font-size: 12px;
+  color: var(--fg-muted);
+  line-height: 1.25;
+}
+
+.icon-refresh-btn {
+  width: 36px;
+  height: 36px;
+  min-height: 36px;
+  padding: 0;
+  border-radius: 50%;
+  font-size: 16px;
+  background: var(--surface-2);
+  color: var(--fg-muted);
+  flex-shrink: 0;
+}
+
+.icon-refresh-btn:hover {
+  color: var(--fg);
+  background: var(--surface-3);
+}
+
+.icon-refresh-btn.spinning {
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* Individual Package Cards */
+.pkg-card-list {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.pkg-card {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 12px 14px;
+  display: grid;
+  gap: 6px;
+  transition: transform 0.1s ease, border-color 0.15s ease;
+}
+
+.pkg-card-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+
+.carrier-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.carrier-badge.amazon { color: #f59e0b; }
+.carrier-badge.ups { color: #d97706; }
+.carrier-badge.fedex { color: #a855f7; }
+.carrier-badge.usps { color: #3b82f6; }
+.carrier-badge.other { color: var(--fg); }
+
+.pkg-location-pill {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--surface-3);
+  color: var(--fg-muted);
+}
+
+.pkg-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--fg-muted);
+}
+
+.pkg-copy-btn {
+  min-height: 26px;
+  height: 26px;
+  padding: 0 8px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  background: var(--surface-3);
+  color: var(--fg);
+  border: none;
+}
+
+.pkg-copy-btn:active {
+  transform: scale(0.95);
+}
+
+/* ==========================================================================
+   Master Light Controls & Quick Presets
+   ========================================================================== */
+.master-strip {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 14px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.master-strip::-webkit-scrollbar {
+  display: none;
+}
+
+.master-btn {
+  flex: 1;
+  min-width: 90px;
+  height: 38px;
+  min-height: 38px;
+  padding: 0 12px;
+  border-radius: 12px;
+  font-size: 13px;
+  font-weight: 600;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  white-space: nowrap;
+}
+
+.master-btn.all-off {
+  color: var(--fg-muted);
+}
+
+.master-btn.all-bright {
+  background: var(--amber-soft);
+  color: var(--amber);
+  border-color: rgba(245, 158, 11, 0.3);
+}
+
+.master-btn:hover {
+  background: var(--surface-3);
+}

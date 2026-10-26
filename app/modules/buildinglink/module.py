@@ -156,8 +156,8 @@ class Module(RemoteModule):
             # Keep tokens synced if driver refreshed them
             self.access_token = self.driver.access_token
             self.refresh_token = self.driver.refresh_token
-            self.packages = items
-            now_str = datetime.datetime.now().strftime("%-I:%M %p")
+            from zoneinfo import ZoneInfo
+            now_str = datetime.datetime.now(ZoneInfo("America/New_York")).strftime("%-I:%M %p")
             self.last_synced = now_str
             self._persist()
 

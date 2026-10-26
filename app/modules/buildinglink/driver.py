@@ -89,6 +89,9 @@ def extract_token_input(raw: str) -> dict[str, Any]:
     }
 
 
+import datetime
+from zoneinfo import ZoneInfo
+
 def parse_delivery(item: dict[str, Any]) -> dict[str, Any]:
     """Normalize a raw BuildingLink event-log entry into a clean frontend model."""
     item_id = str(
@@ -100,17 +103,28 @@ def parse_delivery(item: dict[str, Any]) -> dict[str, Any]:
         or ""
     )
 
-    carrier = str(
+    carrier_raw = (
         item.get("carrier")
         or item.get("carrierName")
         or item.get("CarrierName")
+        or item.get("eventTypeName")
         or item.get("vendor")
         or item.get("sender")
         or item.get("shippingCompany")
         or item.get("typeDescription")
         or item.get("eventTypeDescription")
         or "Package"
-    ).strip()
+    )
+    carrier = str(carrier_raw).strip()
+    c_upper = carrier.upper()
+    if c_upper in ("AMAZON", "AMZN"):
+        carrier = "Amazon"
+    elif c_upper in ("FEDEX", "FED EX"):
+        carrier = "FedEx"
+    elif c_upper in ("UPS", "USPS", "DHL"):
+        carrier = c_upper
+    elif carrier.isupper() and len(carrier) > 4:
+        carrier = carrier.title()
 
     pkg_type = str(
         item.get("type")
@@ -118,14 +132,6 @@ def parse_delivery(item: dict[str, Any]) -> dict[str, Any]:
         or item.get("typeDescription")
         or item.get("packageType")
         or "Delivery"
-    ).strip()
-
-    tracking = str(
-        item.get("trackingNumber")
-        or item.get("TrackingNumber")
-        or item.get("tracking")
-        or item.get("barcode")
-        or ""
     ).strip()
 
     description = str(
@@ -137,8 +143,22 @@ def parse_delivery(item: dict[str, Any]) -> dict[str, Any]:
         or ""
     ).strip()
 
-    received_at = str(
-        item.get("openDate")
+    tracking = str(
+        item.get("trackingNumber")
+        or item.get("TrackingNumber")
+        or item.get("tracking")
+        or item.get("barcode")
+        or ""
+    ).strip()
+
+    if not tracking and description:
+        tba_match = re.search(r"(TBA[0-9]{10,}|1Z[A-Z0-9]{16}|[0-9]{20,22})", description)
+        if tba_match:
+            tracking = tba_match.group(1)
+
+    received_raw = str(
+        item.get("openUtc")
+        or item.get("openDate")
         or item.get("openTime")
         or item.get("createdDate")
         or item.get("createDate")
@@ -148,12 +168,29 @@ def parse_delivery(item: dict[str, Any]) -> dict[str, Any]:
         or ""
     ).strip()
 
+    received_at = received_raw
+    if "T" in received_raw and ("Z" in received_raw or "+" in received_raw):
+        try:
+            clean_iso = received_raw.rstrip("Z").split(".")[0]
+            utc_dt = datetime.datetime.fromisoformat(clean_iso).replace(tzinfo=datetime.timezone.utc)
+            ny_tz = ZoneInfo("America/New_York")
+            ny_dt = utc_dt.astimezone(ny_tz)
+            now_ny = datetime.datetime.now(ny_tz)
+            if ny_dt.date() == now_ny.date():
+                received_at = f"Today {ny_dt.strftime('%-I:%M %p')}"
+            else:
+                received_at = ny_dt.strftime("%b %-d, %-I:%M %p")
+        except Exception:
+            pass
+
     location = str(
         item.get("location")
         or item.get("storageLocation")
         or item.get("packageLocation")
         or "Front Desk"
     ).strip()
+
+    icon_url = str(item.get("iconBlobUrl") or "").strip()
 
     return {
         "id": item_id,
@@ -163,6 +200,7 @@ def parse_delivery(item: dict[str, Any]) -> dict[str, Any]:
         "description": description,
         "received_at": received_at,
         "location": location,
+        "icon_url": icon_url,
     }
 
 

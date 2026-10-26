@@ -82,10 +82,25 @@ export function onState(module, fn) {
  * (and 150ms after), so it never fights the user's thumb.
  * Also syncs `.fill-slider` progress bar and accessible `aria-valuetext`.
  */
+/**
+ * Slider that ignores server echoes while the user's finger is on it
+ * (and 150ms after), so it never fights the user's thumb.
+ * Also syncs `.fill-slider` progress bar, accessible `aria-valuetext`,
+ * and a floating thumb bubble so the finger never obscures the value.
+ */
 export function lockedSlider(input, { onInput, throttleMs = 50, formatValue } = {}) {
   let dragging = false, releaseTimer, throttleTimer, last = 0;
   const wrap = input.closest(".fill-slider");
   const valueEl = wrap ? wrap.querySelector(".fill-slider-value") : null;
+
+  // Create floating thumb bubble if not already present
+  let bubbleEl = wrap ? wrap.querySelector(".fill-slider-bubble") : null;
+  if (wrap && !bubbleEl) {
+    bubbleEl = document.createElement("div");
+    bubbleEl.className = "fill-slider-bubble";
+    bubbleEl.setAttribute("aria-hidden", "true");
+    wrap.appendChild(bubbleEl);
+  }
 
   const updateVisualFill = (val) => {
     const min = Number(input.min || 0);
@@ -93,21 +108,27 @@ export function lockedSlider(input, { onInput, throttleMs = 50, formatValue } = 
     const clamped = Math.max(min, Math.min(max, Number(val)));
     const pct = max > min ? ((clamped - min) / (max - min)) * 100 : 0;
     if (wrap) wrap.style.setProperty("--fill", `${pct.toFixed(1)}%`);
-    if (formatValue) {
-      const text = formatValue(clamped);
-      input.setAttribute("aria-valuetext", text);
-      if (valueEl) valueEl.textContent = text;
-    }
+    const text = formatValue ? formatValue(clamped) : `${Math.round(clamped)}`;
+    input.setAttribute("aria-valuetext", text);
+    if (valueEl) valueEl.textContent = text;
+    if (bubbleEl) bubbleEl.textContent = text;
   };
 
   const lock = () => {
+    if (!dragging && navigator.vibrate) {
+      try { navigator.vibrate(6); } catch (_) {}
+    }
     dragging = true;
+    if (wrap) wrap.classList.add("is-dragging");
     clearTimeout(releaseTimer);
   };
 
   const unlock = () => {
     clearTimeout(releaseTimer);
-    releaseTimer = setTimeout(() => { dragging = false; }, 250);
+    releaseTimer = setTimeout(() => {
+      dragging = false;
+      if (wrap) wrap.classList.remove("is-dragging");
+    }, 250);
   };
 
   const emit = (val) => {
@@ -136,8 +157,7 @@ export function lockedSlider(input, { onInput, throttleMs = 50, formatValue } = 
     if (remaining <= 0) {
       emit(v);
     } else {
-      // Trailing edge: guarantees that when you reverse and hold without letting go,
-      // the upward/final position is ALWAYS sent!
+      // Trailing edge: guarantees upward/final position is ALWAYS sent!
       clearTimeout(throttleTimer);
       throttleTimer = setTimeout(() => {
         emit(Number(input.value));
@@ -169,9 +189,17 @@ export function lockedSlider(input, { onInput, throttleMs = 50, formatValue } = 
 /**
  * Press-and-hold repeater for volume/step buttons:
  * Single tap triggers once; holding repeats smoothly after `delay` ms.
+ * Adds tactile haptic vibration where supported.
  */
 export function bindStepRepeat(btn, onStep, { delay = 380, interval = 110 } = {}) {
   let holdTimer = null, repeatTimer = null, pointerActive = false;
+
+  const triggerStep = () => {
+    if (navigator.vibrate) {
+      try { navigator.vibrate(8); } catch (_) {}
+    }
+    onStep();
+  };
 
   const stop = () => {
     clearTimeout(holdTimer);
@@ -183,10 +211,10 @@ export function bindStepRepeat(btn, onStep, { delay = 380, interval = 110 } = {}
   btn.addEventListener("pointerdown", (e) => {
     if (e.button && e.button !== 0) return;
     pointerActive = true;
-    onStep();
+    triggerStep();
     stop();
     holdTimer = setTimeout(() => {
-      repeatTimer = setInterval(onStep, interval);
+      repeatTimer = setInterval(triggerStep, interval);
     }, delay);
   });
 
@@ -200,14 +228,30 @@ export function bindStepRepeat(btn, onStep, { delay = 380, interval = 110 } = {}
       pointerActive = false;
       return;
     }
-    if (e.detail === 0) onStep();
+    if (e.detail === 0) triggerStep();
   });
+}
+
+function updateHeaderPackagePill(blState) {
+  const pill = document.getElementById("header-pkg-pill");
+  const text = document.getElementById("header-pkg-text");
+  if (!pill) return;
+  const count = typeof blState.packages_count === "number" ? blState.packages_count : (blState.packages || []).length;
+  if (count > 0) {
+    pill.style.display = "inline-flex";
+    if (text) text.textContent = count === 1 ? "1 pkg" : `${count} pkgs`;
+  } else {
+    pill.style.display = "none";
+  }
 }
 
 function apply(module, patch) {
   state[module] = { ...(state[module] || {}), ...patch };
   const card = document.getElementById(`card-${module}`);
   if (card) card.hidden = false;
+  if (module === "buildinglink") {
+    updateHeaderPackagePill(state[module]);
+  }
   (listeners.get(module) || []).forEach((fn) => fn(state[module], patch));
 }
 
@@ -243,8 +287,8 @@ function connect() {
   };
 }
 
-// Module cards are loaded on demand; add a module by adding a file + name here.
-const MODULE_CARDS = ["denon", "hue", "litter_robot", "buildinglink", "demo"];
+// Module cards: Deliveries at top, then Lights, then Audio, then Pets at bottom!
+const MODULE_CARDS = ["buildinglink", "hue", "denon", "litter_robot", "demo"];
 for (const name of MODULE_CARDS) {
   const el = document.createElement("section");
   el.className = "card";
@@ -256,3 +300,4 @@ for (const name of MODULE_CARDS) {
 }
 
 connect();
+

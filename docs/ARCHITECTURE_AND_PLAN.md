@@ -125,6 +125,24 @@ Browsers enforce **Private Network Access (PNA)** and **Mixed Content blocking**
 - [ ] Configure local DNS / Cloudflare Tunnel for `remote.userdomain.com`.
 - [ ] 1-tap macro scenes (e.g. *Movie Night*, *Goodnight*).
 
+### Phase 4: Neighborhood & Commute Telemetry ("Going Out")
+- [ ] **MTA L Train Subway Arrivals (Bedford Av)**:
+  - Real-time departure predictions for Bedford Ave (L line) via MTA GTFS-Realtime protobuf feed.
+  - Manhattan-bound vs Canarsie-bound minute countdowns (e.g. `Manhattan: 3 · 8 · 14 min`).
+  - Walking-time filter (e.g. "4 min walk to Bedford" to flag reachable vs unreachable trains).
+  - High-priority service alert escalation banner for L train delays, suspensions, and planned track work.
+- [ ] **Citi Bike Station Telemetry (North Williamsburg)**:
+  - Real-time station capacity from Citi Bike GBFS feeds (`station_status.json`).
+  - Target stations: N 6th & Bedford, Kent & N 5th, etc.
+  - Dual-mode glance: "Take a bike" (standard + e-bike counts) vs "Return a bike" (empty dock counts).
+  - Low-inventory color coding (green = plentiful, amber = 1-2 left, red = empty).
+- [ ] **Hyperlocal Weather & Air Quality**:
+  - Integration with Open-Meteo / NWS API.
+  - Dynamic time-aware headline (e.g. "Rain starting in 40 min", "High 62° · jacket weather").
+  - 1-tap detail view: hourly precipitation graph, sunset / golden hour timing, air quality index.
+- [ ] **Ferry Departure Glance**:
+  - NYC Ferry North Williamsburg landing departures for river commute.
+
 ---
 
 ## 6. Questions & Critique Prompts for the Reviewing Agent
@@ -132,3 +150,4 @@ Browsers enforce **Private Network Access (PNA)** and **Mixed Content blocking**
 1. **Volume Slider Debounce vs Step Buttons**: Telnet can choke if a web slider sends 50 volume updates in 500ms. Should the UI use pure `+ / -` step buttons (1dB / 0.5dB) or a debounced slider with immediate local optimistic UI?
 2. **Denon Audio Feedback**: Does the AVR-X1200W report volume dB in half-dB steps (e.g. `MV505` = 50.5) and is the current Telnet protocol preferred over the newer HEOS CLI protocol on port 1255?
 3. **Security / Guest Isolation**: Should the Petlibro dispense button and Litter-Robot cycle button be behind a simple household PIN/toggle to prevent casual guests or accidental pocket clicks?
+

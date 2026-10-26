@@ -9,6 +9,7 @@ A unified local-first smart home remote control web app designed for anyone on y
 - 🐱 **Petlibro Smart Feeder**: Cloud API / Tuya integration for manual snack dispenses and food level telemetry.
 - 🤖 **Litter-Robot 4 (Whisker)**: Whisker API for waste drawer levels, clean cycle triggering, cat visit stats, and status.
 - 📦 **BuildingLink**: Resident API (`eventlog-us1.buildinglink.com`) for live front-desk package & delivery tracking.
+- 🚇 **Going Out & Commute (Roadmap)**: Bedford Ave (L train) MTA arrivals, North Williamsburg Citi Bike availability, and hyperlocal weather.
 
 ## Architecture
 

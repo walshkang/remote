@@ -83,6 +83,13 @@ export function mount(el, { send, onState, lockedSlider }) {
       </span>
     </div>
 
+    <!-- Quick Master Actions -->
+    <div class="master-strip" id="hue-master-strip" role="group" aria-label="Master lighting controls">
+      <button id="hue-all-off" class="master-btn all-off" type="button" title="Turn all lights off">⏻ All Off</button>
+      <button id="hue-all-relax" class="master-btn" type="button" title="Warm ambient lighting">☕ Relax</button>
+      <button id="hue-all-bright" class="master-btn all-bright" type="button" title="100% Brightness">☀ Bright</button>
+    </div>
+
     <div id="hue-pair" class="callout" hidden>
       <div class="muted" style="margin-bottom:10px;">
         Press the physical link button on top of your Philips Hue Bridge, then tap <strong>Pair Bridge</strong> within 30 seconds.
@@ -101,7 +108,31 @@ export function mount(el, { send, onState, lockedSlider }) {
   const errEl = el.querySelector("#hue-error");
   const roomsEl = el.querySelector("#hue-rooms");
 
+  let currentRooms = [];
+
+  el.querySelector("#hue-all-off").addEventListener("click", () => {
+    currentRooms.forEach((r) => {
+      if (r.on) send("hue", "room_toggle", { room: r.id, on: false });
+    });
+  });
+
+  el.querySelector("#hue-all-bright").addEventListener("click", () => {
+    currentRooms.forEach((r) => {
+      send("hue", "room_toggle", { room: r.id, on: true });
+      send("hue", "room_brightness", { room: r.id, value: 100 });
+    });
+  });
+
+  el.querySelector("#hue-all-relax").addEventListener("click", () => {
+    currentRooms.forEach((r) => {
+      send("hue", "room_toggle", { room: r.id, on: true });
+      send("hue", "room_brightness", { room: r.id, value: 65 });
+      send("hue", "room_temperature", { room: r.id, mirek: 370 });
+    });
+  });
+
   el.querySelector("#hue-pair-btn").addEventListener("click", () => send("hue", "pair"));
+
 
   let signature = "";
   const refs = { rooms: {}, lights: {} };
@@ -343,10 +374,11 @@ export function mount(el, { send, onState, lockedSlider }) {
       );
 
       const briSlider = lockedSlider(card.querySelector(".room-bri"), {
-        throttleMs: 220,
+        throttleMs: 80,
         formatValue: (v) => `${Math.round(v)}%`,
         onInput: (v) => send("hue", "room_brightness", { room: room.id, value: v }),
       });
+
 
       // Scenes
       const scenesRow = card.querySelector(".scenes-row");
