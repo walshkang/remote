@@ -8,6 +8,7 @@ A unified local-first smart home remote control web app designed for anyone on y
 - 🔊 **Denon AVR**: Instant LAN control via Denon Telnet (port 23) or HTTP API (port 8080/80) for volume, power, inputs, and sound modes.
 - 🐱 **Petlibro Smart Feeder**: Cloud API / Tuya integration for manual snack dispenses and food level telemetry.
 - 🤖 **Litter-Robot 4 (Whisker)**: Whisker API for waste drawer levels, clean cycle triggering, cat visit stats, and status.
+- 📦 **BuildingLink**: Resident API (`eventlog-us1.buildinglink.com`) for live front-desk package & delivery tracking.
 
 ## Architecture
 
