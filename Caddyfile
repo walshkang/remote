@@ -1,3 +1,12 @@
 {$DOMAIN:remote.walshkang.com} {
-    reverse_proxy remote:8000
+    @allowed client_ip {$HOME_IP:71.190.248.179} 100.64.0.0/10 192.168.0.0/16 10.0.0.0/8 172.16.0.0/12 127.0.0.1 ::1
+
+    handle @allowed {
+        reverse_proxy remote:8000
+    }
+
+    handle {
+        respond "Access Denied: This remote is only accessible when connected to Walsh's Home Wi-Fi or Tailscale." 403
+    }
 }
+
