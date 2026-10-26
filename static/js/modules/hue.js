@@ -55,7 +55,7 @@ export function mount(el, { send, onState, lockedSlider }) {
 
       const toggle = card.querySelector(".toggle");
       const bri = lockedSlider(card.querySelector(".bri"), {
-        throttleMs: 250,
+        throttleMs: 80,
         onInput: (v) => send("hue", "room_brightness", { room: room.id, value: v }),
       });
       let on = false;

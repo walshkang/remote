@@ -18,21 +18,42 @@ export function onState(module, fn) {
 }
 
 /** Slider that ignores server echoes while the user's finger is on it
- *  (and 150ms after), so it never fights the user's thumb. */
+ *  (and 300ms after release), so it never fights the user's thumb. */
 export function lockedSlider(input, { onInput, throttleMs = 50 }) {
   let dragging = false, releaseTimer, last = 0;
   const lock = () => { dragging = true; clearTimeout(releaseTimer); };
-  const unlock = () => { clearTimeout(releaseTimer); releaseTimer = setTimeout(() => (dragging = false), 150); };
+  const unlock = () => {
+    clearTimeout(releaseTimer);
+    releaseTimer = setTimeout(() => (dragging = false), 300);
+  };
+
   input.addEventListener("pointerdown", lock);
   input.addEventListener("pointerup", unlock);
   input.addEventListener("pointercancel", unlock);
+
+  // Mobile touch listeners for iOS Safari and Android
+  input.addEventListener("touchstart", lock, { passive: true });
+  input.addEventListener("touchend", unlock, { passive: true });
+  input.addEventListener("touchcancel", unlock, { passive: true });
+
   input.addEventListener("input", () => {
-    lock(); unlock();
+    lock(); // Keep locked while actively receiving input; do NOT unlock here!
     const now = performance.now();
-    if (now - last >= throttleMs) { last = now; onInput(Number(input.value)); }
+    if (now - last >= throttleMs) {
+      last = now;
+      onInput(Number(input.value));
+    }
   });
-  input.addEventListener("change", () => onInput(Number(input.value))); // always send final value
-  return { set(v) { if (!dragging) input.value = v; }, get dragging() { return dragging; } };
+
+  input.addEventListener("change", () => {
+    onInput(Number(input.value));
+    unlock();
+  });
+
+  return {
+    set(v) { if (!dragging) input.value = v; },
+    get dragging() { return dragging; }
+  };
 }
 
 function apply(module, patch) {
