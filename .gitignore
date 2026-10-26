@@ -33,3 +33,6 @@ ENV/
 .idea/
 *.swp
 *.swo
+
+# Runtime secrets (Hue app key etc.)
+data/

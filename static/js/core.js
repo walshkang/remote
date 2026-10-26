@@ -62,7 +62,7 @@ function connect() {
 }
 
 // Module cards are loaded on demand; add a module by adding a file + name here.
-const MODULE_CARDS = ["denon", "demo"];
+const MODULE_CARDS = ["denon", "hue", "demo"];
 for (const name of MODULE_CARDS) {
   const el = document.createElement("section");
   el.className = "card";

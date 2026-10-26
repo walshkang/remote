@@ -9,6 +9,9 @@ from pathlib import Path
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
+from dotenv import load_dotenv
+
+load_dotenv()  # read .env (gitignored) before modules are loaded
 
 from app.core.registry import load_modules
 from app.core.state_bus import StateBus
