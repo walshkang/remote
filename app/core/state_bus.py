@@ -19,11 +19,33 @@ class StateBus:
         self.ws = ws
         self._state: dict[str, dict[str, Any]] = {}
         self._locks: dict[str, asyncio.Lock] = {}
+        self._action_handlers: dict[str, Callable[[str, dict[str, Any], str], Awaitable[None]]] = {}
         self._seq = 0
 
     def register(self, module_id: str, initial: dict[str, Any]) -> None:
         self._state[module_id] = dict(initial)
         self._locks[module_id] = asyncio.Lock()
+
+    def register_action_handler(
+        self,
+        module_id: str,
+        handler: Callable[[str, dict[str, Any], str], Awaitable[None]],
+    ) -> None:
+        self._action_handlers[module_id] = handler
+
+    async def dispatch(
+        self,
+        module_id: str,
+        action: str,
+        payload: dict[str, Any] | None = None,
+        client_id: str = "macro",
+    ) -> bool:
+        """Invoke another module's action handler if loaded; returns True on success."""
+        handler = self._action_handlers.get(module_id)
+        if handler is None:
+            return False
+        await handler(action, payload or {}, client_id)
+        return True
 
     def lock(self, module_id: str) -> asyncio.Lock:
         """Hold this around read-modify-write sequences (e.g. volume deltas)."""

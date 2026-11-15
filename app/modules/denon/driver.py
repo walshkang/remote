@@ -103,6 +103,7 @@ class DenonDriver:
             except Exception as e:
                 log.warning("Denon telnet disconnected/error: %s. Retrying in %.1fs...", e, backoff)
                 await self._close_socket()
+                await self._refresh_source_config()
                 await asyncio.sleep(backoff)
                 backoff = min(backoff * 1.5, 30.0)
 
@@ -202,9 +203,41 @@ class DenonDriver:
                     zone_el = root.find("./Zone/value")
                     zone_name = zone_el.text.strip() if zone_el is not None and zone_el.text else ""
 
-                    patch = {"sources": sources}
+                    patch: dict[str, Any] = {"connected": True, "sources": sources}
                     if zone_name:
                         patch["zone_name"] = zone_name
+
+                    pwr_el = root.find("./Power/value")
+                    if pwr_el is not None and pwr_el.text:
+                        pwr = pwr_el.text.strip().upper()
+                        if pwr == "ON":
+                            patch["power"] = "ON"
+                        elif pwr in ("OFF", "STANDBY"):
+                            patch["power"] = "STANDBY"
+
+                    mute_el = root.find("./Mute/value")
+                    if mute_el is not None and mute_el.text:
+                        mval = mute_el.text.strip().lower()
+                        if mval in ("on", "off"):
+                            patch["mute"] = mval == "on"
+
+                    sel_el = root.find("./InputFuncSelect/value")
+                    if sel_el is not None and sel_el.text:
+                        sel = sel_el.text.strip()
+                        patch["source"] = code_map.get(sel, sel)
+
+                    vol_el = root.find("./MasterVolume/value")
+                    if vol_el is not None and vol_el.text:
+                        vtxt = vol_el.text.strip()
+                        try:
+                            rel_db = -80.0 if vtxt == "--" else float(vtxt)
+                            val = max(0.0, min(80.0, rel_db + 80.0))
+                            db_display = f"{rel_db:+.1f} dB" if rel_db != 0 else "0.0 dB"
+                            patch["volume"] = val
+                            patch["volume_db"] = db_display
+                        except ValueError:
+                            pass
+
                     await self.on_state_change(patch)
         except Exception as e:
             log.debug("Failed fetching Denon source renames from HTTP: %s", e)

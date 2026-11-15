@@ -48,10 +48,11 @@ async def test_denon_driver_parsing():
 
 
 @pytest.mark.asyncio
-async def test_denon_module_actions():
+async def test_denon_module_actions(monkeypatch):
     from app.core.state_bus import StateBus
     from app.core.ws_manager import WSManager
 
+    monkeypatch.setenv("DENON_HOST", "")
     bus = StateBus(WSManager())
     mod = Module()
     bus.register(mod.module_id, mod.initial_state())
@@ -63,3 +64,63 @@ async def test_denon_module_actions():
     assert bus.get(mod.module_id)["volume"] == start_vol + 2.5
 
     await mod.stop()
+
+
+@pytest.mark.asyncio
+async def test_denon_refresh_source_config(monkeypatch):
+    import httpx
+
+    xml_body = """<?xml version="1.0" encoding="utf-8" ?>
+    <item>
+      <Zone><value>LIVING RM</value></Zone>
+      <InputFuncList>
+        <value>Media Player</value>
+        <value>CBL/SAT</value>
+        <value>DVD</value>
+      </InputFuncList>
+      <RenameSource>
+        <value><value>Turntable</value></value>
+        <value><value>CD Player</value></value>
+        <value><value>Unused</value></value>
+      </RenameSource>
+      <SourceDelete>
+        <value>USE</value>
+        <value>USE</value>
+        <value>DEL</value>
+      </SourceDelete>
+      <Power><value>OFF</value></Power>
+      <Mute><value>off</value></Mute>
+      <InputFuncSelect><value>TV</value></InputFuncSelect>
+      <MasterVolume><value>-30.0</value></MasterVolume>
+    </item>
+    """
+
+    transport = httpx.MockTransport(lambda req: httpx.Response(200, text=xml_body))
+    orig_client = httpx.AsyncClient
+    monkeypatch.setattr(
+        "app.modules.denon.driver.httpx.AsyncClient",
+        lambda *a, **kw: orig_client(transport=transport),
+    )
+
+    updates = []
+
+    async def callback(patch):
+        updates.append(patch)
+
+    driver = DenonDriver("127.0.0.1", on_state_change=callback)
+    await driver._refresh_source_config()
+
+    assert len(updates) == 1
+    patch = updates[0]
+    assert patch["connected"] is True
+    assert patch["zone_name"] == "LIVING RM"
+    assert patch["power"] == "STANDBY"
+    assert patch["mute"] is False
+    assert patch["source"] == "TV"
+    assert patch["volume"] == 50.0
+    assert patch["volume_db"] == "-30.0 dB"
+    assert [s["code"] for s in patch["sources"]] == ["MPLAY", "SAT/CBL"]
+    assert patch["sources"][0]["name"] == "Turntable"
+    assert patch["sources"][0]["icon"] == "🎛️"
+    assert patch["sources"][1]["name"] == "CD Player"
+    assert patch["sources"][1]["icon"] == "💿"

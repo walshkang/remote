@@ -111,7 +111,14 @@ class Module(RemoteModule):
                 await self._init_driver(new_host)
             return
 
-        if action == "power_toggle":
+        if action == "power_set":
+            target = str(payload.get("power", "ON")).upper()
+            new_power = "STANDBY" if target in ("OFF", "STANDBY") else "ON"
+            await self.bus.update(self.module_id, {"power": new_power}, origin=client_id)
+            if self.driver:
+                await self.driver.send_raw("PWSTANDBY" if new_power == "STANDBY" else "PWON")
+
+        elif action == "power_toggle":
             current = self.bus.get(self.module_id).get("power")
             new_power = "STANDBY" if current == "ON" else "ON"
             await self.bus.update(self.module_id, {"power": new_power}, origin=client_id)

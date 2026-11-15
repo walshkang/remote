@@ -7,6 +7,9 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <title>Remote</title>
+  <link rel="manifest" href="/manifest.json">
+  <link rel="icon" href="/static/icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="/static/icon.svg">
   <link rel="stylesheet" href="/static/css/styles.css">
 </head>
 <body>
@@ -30,7 +33,17 @@
         </button>
       </div>
     </header>
-    <main id="cards" aria-label="Smart home controls"></main>
+    <main id="cards" aria-label="Smart home controls">
+      <section id="scenes-bar" class="scenes-strip" aria-label="Quick scenes">
+        <div class="scenes-row">
+          <button type="button" class="scene-btn" data-scene="movie_night">🎬 Movie Night</button>
+          <button type="button" class="scene-btn" data-scene="relax">☕ Relax</button>
+          <button type="button" class="scene-btn" data-scene="goodnight">🌙 Goodnight</button>
+          <button type="button" class="scene-btn" data-scene="all_off">⏻ All Off</button>
+        </div>
+        <div id="scene-toast" class="scene-toast" role="status" aria-live="polite" hidden></div>
+      </section>
+    </main>
   </div>
   <script type="module" src="/static/js/core.js"></script>
 </body>

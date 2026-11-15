@@ -2,6 +2,7 @@ export function mount(el, { send, onState }) {
   el.setAttribute("aria-label", "BuildingLink Front Desk & Deliveries");
 
   let manualSetupOpen = false;
+  let lastState = null;
 
   const esc = (s) => {
     const d = document.createElement("div");
@@ -19,7 +20,9 @@ export function mount(el, { send, onState }) {
     return { cls: "other", icon: "📦", name: carrierRaw || "Package" };
   };
 
-  onState("buildinglink", (s) => {
+  const render = (s) => {
+    if (!s) return;
+    lastState = s;
     const prop = s.property_name || "BuildingLink";
     const unit = s.unit ? ` · ${s.unit}` : "";
     const pkgs = Array.isArray(s.packages) ? s.packages : [];
@@ -86,21 +89,25 @@ export function mount(el, { send, onState }) {
 
       el.querySelector("#bl-settings-btn").addEventListener("click", () => {
         manualSetupOpen = true;
-        send("buildinglink", "poll"); // trigger re-render
+        render(lastState);
       });
       return;
     }
 
     // 3. ACTIVE DELIVERIES VIEW: 1+ PACKAGES (OR MANUAL SETUP OPEN)
+    const badgeCls = count === 0 ? "pill neutral" : "pill pkg-pill";
+    const badgeLabel = count === 0
+      ? "Front Desk Clear"
+      : (count === 1 ? "1 Waiting for Pickup" : `${count} Waiting for Pickup`);
     el.innerHTML = `
       <div class="card-header">
         <div class="card-title-group">
           <h2>Front Desk Deliveries</h2>
           <span class="card-subtitle">${esc(prop)}${esc(unit)}</span>
         </div>
-        <span class="pill pkg-pill" role="status">
-          <span aria-hidden="true">📦</span>
-          <span>${count === 1 ? "1 Waiting for Pickup" : `${count} Waiting for Pickup`}</span>
+        <span class="${badgeCls}" role="status">
+          <span aria-hidden="true">${count === 0 ? "✓" : "📦"}</span>
+          <span>${badgeLabel}</span>
         </span>
       </div>
 
@@ -171,6 +178,10 @@ export function mount(el, { send, onState }) {
     if (settingsBtn) {
       settingsBtn.addEventListener("click", () => {
         manualSetupOpen = !manualSetupOpen;
+        if (count === 0 && !manualSetupOpen) {
+          render(lastState);
+          return;
+        }
         const drawer = el.querySelector("#bl-setup-drawer");
         if (drawer) drawer.hidden = !manualSetupOpen;
         settingsBtn.textContent = manualSetupOpen ? "Close Key" : "Key";
@@ -190,7 +201,9 @@ export function mount(el, { send, onState }) {
         } catch (_) {}
       });
     });
-  });
+  };
+
+  onState("buildinglink", render);
 
   function bindSetupInputs(container, sendFn) {
     const tokenInput = container.querySelector("#bl-token-input");

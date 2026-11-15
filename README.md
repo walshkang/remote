@@ -9,7 +9,8 @@ A unified local-first smart home remote control web app designed for anyone on y
 - 🐱 **Petlibro Smart Feeder**: Cloud API / Tuya integration for manual snack dispenses and food level telemetry.
 - 🤖 **Litter-Robot 4 (Whisker)**: Whisker API for waste drawer levels, clean cycle triggering, cat visit stats, and status.
 - 📦 **BuildingLink**: Resident API (`eventlog-us1.buildinglink.com`) for live front-desk package & delivery tracking.
-- 🚇 **Going Out & Commute (Roadmap)**: Bedford Ave (L train) MTA arrivals, North Williamsburg Citi Bike availability, and hyperlocal weather.
+- 🚇 **Going Out & Commute**: Bedford Ave (L train) MTA arrivals & alerts, North Williamsburg NYC Ferry departures, North Williamsburg Citi Bike availability, and hyperlocal Open-Meteo weather.
+- 🎬 **Quick Scenes (Macros)**: 1-tap cross-device scenes (*Movie Night*, *Relax*, *Goodnight*, *All Off*) coordinating Hue, Denon, and Litter-Robot.
 
 ## Architecture
 
@@ -48,5 +49,5 @@ uv run pytest
 
 Then open `http://localhost:8000`. Keep `--workers 1`: device connections (e.g. the Denon's single Telnet slot) are singletons.
 
-Modules are configured via `.env` and enabled with `REMOTE_MODULES` (comma-separated, default `demo`). See [docs/ARCHITECTURE_AND_PLAN.md](docs/ARCHITECTURE_AND_PLAN.md).
+Modules are configured via `.env` and enabled with `REMOTE_MODULES` (comma-separated, default `commute,buildinglink,hue,denon,litter_robot,petlibro`). See [docs/ARCHITECTURE_AND_PLAN.md](docs/ARCHITECTURE_AND_PLAN.md).
 

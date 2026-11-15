@@ -2,17 +2,40 @@
 from __future__ import annotations
 
 import asyncio
+import json
 import logging
 import os
 import time
+from pathlib import Path
 from typing import Any
 
 from app.core.module_base import RemoteModule
 
 log = logging.getLogger(__name__)
 
+DATA_FILE = Path(__file__).resolve().parents[3] / "data" / "litter_robot.json"
 CLEAN_COOLDOWN_S = 60  # server-side guard against double taps / retries
 POLL_INTERVAL_S = 60  # safety net if the websocket silently drops
+
+
+def _load_saved() -> dict[str, Any]:
+    try:
+        if DATA_FILE.exists():
+            data = json.loads(DATA_FILE.read_text())
+            if isinstance(data, dict):
+                return data
+    except Exception:
+        pass
+    return {}
+
+
+def _save_data(data: dict[str, Any]) -> None:
+    DATA_FILE.parent.mkdir(exist_ok=True)
+    DATA_FILE.write_text(json.dumps(data, indent=2))
+    try:
+        DATA_FILE.chmod(0o600)
+    except Exception:
+        pass
 
 
 def robot_snapshot(robot: Any) -> dict[str, Any]:
@@ -33,6 +56,7 @@ def robot_snapshot(robot: Any) -> dict[str, Any]:
         "night_light": bool(robot.night_light_mode_enabled),
         "panel_lock": bool(robot.panel_lock_enabled),
         "wait_minutes": int(robot.clean_cycle_wait_time_minutes),
+        "last_seen": str(getattr(robot, "last_seen", "") or ""),
     }
 
 
@@ -41,8 +65,10 @@ class Module(RemoteModule):
 
     def __init__(self) -> None:
         super().__init__()
-        self.email = os.getenv("LITTER_ROBOT_EMAIL", "").strip()
-        self.password = os.getenv("LITTER_ROBOT_PASSWORD", "")
+        saved = _load_saved()
+        self.email = os.getenv("LITTER_ROBOT_EMAIL", "").strip() or saved.get("email", "").strip()
+        self.password = os.getenv("LITTER_ROBOT_PASSWORD", "") or saved.get("password", "")
+        self.guest_pin = os.getenv("GUEST_PIN", "").strip()
         self.account = None
         self.robot = None
         self._task: asyncio.Task | None = None
@@ -53,6 +79,7 @@ class Module(RemoteModule):
         return {
             "configured": bool(self.email and self.password),
             "connected": False,
+            "pin_required": bool(self.guest_pin),
             "error": "",
             "notice": "",
             "robot": None,
@@ -140,9 +167,30 @@ class Module(RemoteModule):
         asyncio.create_task(clear())
 
     async def handle_action(self, action: str, payload: dict[str, Any], client_id: str) -> None:
+        if action == "set_credentials":
+            email = str(payload.get("email", "")).strip()
+            password = str(payload.get("password", ""))
+            if not (email and password):
+                await self._notice("Enter your Whisker email & password")
+                return
+            self.email = email
+            self.password = password
+            _save_data({"email": self.email, "password": self.password})
+            await self.bus.update(self.module_id, {"configured": True, "error": ""})
+            if self._task and not self._task.done():
+                self._task.cancel()
+            self._task = asyncio.create_task(self._run())
+            await self._notice("Connecting to Whisker…")
+            return
+
         if self.robot is None:
             await self._notice("Litter-Robot isn't connected yet")
             return
+
+        if self.guest_pin and action in ("clean", "panel_lock"):
+            if str(payload.get("pin", "")).strip() != self.guest_pin:
+                await self._notice("Invalid or missing household PIN")
+                return
 
         if action == "clean":
             async with self.bus.lock(self.module_id):  # serialize simultaneous taps

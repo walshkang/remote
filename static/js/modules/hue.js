@@ -127,7 +127,7 @@ export function mount(el, { send, onState, lockedSlider }) {
     currentRooms.forEach((r) => {
       send("hue", "room_toggle", { room: r.id, on: true });
       send("hue", "room_brightness", { room: r.id, value: 65 });
-      send("hue", "room_temperature", { room: r.id, mirek: 370 });
+      send("hue", "room_temp", { room: r.id, mirek: 370 });
     });
   });
 

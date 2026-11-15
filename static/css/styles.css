@@ -1144,3 +1144,240 @@ main {
 .master-btn:hover {
   background: var(--surface-3);
 }
+
+/* ==========================================================================
+   Going Out & Commute Card (Weather, MTA L, NYC Ferry, Citi Bike)
+   ========================================================================== */
+.pill.weather-pill {
+  background: var(--accent-soft);
+  color: var(--fg);
+  border-color: rgba(59, 130, 246, 0.25);
+}
+
+.commute-stack {
+  display: grid;
+  gap: 10px;
+}
+
+.commute-block {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 12px;
+  display: grid;
+  gap: 8px;
+}
+
+.commute-row-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+
+.commute-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 650;
+}
+
+.mta-bullet {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  font-size: 12px;
+  font-weight: 800;
+  color: #ffffff;
+  background: #a7a9ac;
+  flex-shrink: 0;
+}
+
+.ferry-badge {
+  font-size: 15px;
+}
+
+.commute-alert {
+  font-size: 12px;
+  line-height: 1.35;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: var(--amber-soft);
+  color: var(--fg);
+  border: 1px solid rgba(245, 158, 11, 0.35);
+}
+
+.commute-dir-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+@media (max-width: 420px) {
+  .commute-dir-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.commute-dir {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 8px 10px;
+  display: grid;
+  gap: 6px;
+}
+
+.commute-dir-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--fg-muted);
+}
+
+.commute-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.commute-chip {
+  font-size: 12px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: var(--surface-3);
+  color: var(--fg);
+}
+
+.commute-chip.reachable {
+  background: var(--success-soft);
+  color: var(--success);
+}
+
+.commute-chip.tight {
+  opacity: 0.55;
+}
+
+.commute-chip.ferry.rt {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.cb-mode-toggle {
+  display: inline-flex;
+  gap: 4px;
+}
+
+.cb-mode-btn {
+  height: 28px;
+  min-height: 28px;
+  padding: 0 10px;
+  font-size: 11px;
+}
+
+.citibike-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+}
+
+@media (max-width: 420px) {
+  .citibike-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.citibike-tile {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--success);
+  border-radius: 10px;
+  padding: 8px 10px;
+  display: grid;
+  gap: 4px;
+}
+
+.citibike-tile.status-low {
+  border-left-color: var(--amber);
+}
+
+.citibike-tile.status-empty {
+  border-left-color: var(--danger);
+}
+
+.cb-name {
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cb-counts {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 12px;
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+  color: var(--fg-muted);
+}
+
+/* ==========================================================================
+   Quick Cross-Device Scenes Bar
+   ========================================================================== */
+.scenes-strip {
+  display: grid;
+  gap: 8px;
+}
+
+.scenes-row {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding: 2px 0;
+  scrollbar-width: none;
+}
+
+.scenes-row::-webkit-scrollbar {
+  display: none;
+}
+
+.scene-btn {
+  flex: 1 0 auto;
+  min-height: 42px;
+  height: 42px;
+  padding: 0 14px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 600;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow);
+  white-space: nowrap;
+}
+
+.scene-btn[aria-pressed="true"] {
+  background: var(--accent-soft);
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+.scene-toast {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--success);
+  background: var(--success-soft);
+  padding: 6px 12px;
+  border-radius: 10px;
+  text-align: center;
+}
+
+.scene-toast[hidden] {
+  display: none !important;
+}

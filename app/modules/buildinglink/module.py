@@ -139,6 +139,9 @@ class Module(RemoteModule):
                 await self.refresh_deliveries()
             except asyncio.CancelledError:
                 break
+            except BuildingLinkAuthError:
+                log.warning("BuildingLink token expired; pausing background poll until updated")
+                break
             except Exception as e:
                 log.warning("BuildingLink poll error: %s", e)
             await asyncio.sleep(self.poll_interval)
@@ -238,7 +241,7 @@ class Module(RemoteModule):
                     pass
             return
 
-        if action == "refresh":
+        if action in ("refresh", "poll"):
             try:
                 items = await self.refresh_deliveries()
                 count = len(items)

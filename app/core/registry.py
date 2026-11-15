@@ -11,10 +11,13 @@ log = logging.getLogger(__name__)
 
 
 def load_modules() -> list[RemoteModule]:
-    """REMOTE_MODULES="denon,hue,litter_robot,buildinglink,demo" -> imports app.modules.<id>.module.Module."""
+    """REMOTE_MODULES="commute,buildinglink,hue,denon,litter_robot,petlibro" -> imports app.modules.<id>.module.Module."""
     names = [
         n.strip()
-        for n in os.getenv("REMOTE_MODULES", "denon,hue,litter_robot,buildinglink,demo").split(",")
+        for n in os.getenv(
+            "REMOTE_MODULES",
+            "commute,buildinglink,hue,denon,litter_robot,petlibro",
+        ).split(",")
         if n.strip()
     ]
     modules: list[RemoteModule] = []

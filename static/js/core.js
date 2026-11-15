@@ -281,14 +281,55 @@ function connect() {
       Object.entries(msg.state).forEach(([m, s]) => apply(m, s));
     } else if (msg.type === "state") {
       apply(msg.module, msg.patch);
+    } else if (msg.type === "macro_ack") {
+      showSceneToast(msg.scene);
     } else if (msg.type === "error") {
       console.warn("server error", msg);
     }
   };
 }
 
-// Module cards: Deliveries at top, then Lights, then Audio, then Pets at bottom!
-const MODULE_CARDS = ["buildinglink", "hue", "denon", "litter_robot", "demo"];
+const SCENE_LABELS = {
+  movie_night: "Movie Night activated",
+  relax: "Relax mode activated",
+  goodnight: "Goodnight activated",
+  all_off: "All devices turned off",
+};
+
+let sceneToastTimer = null;
+function showSceneToast(scene) {
+  const toast = document.getElementById("scene-toast");
+  if (!toast) return;
+  toast.textContent = `${SCENE_LABELS[scene] || scene} ✓`;
+  toast.hidden = false;
+  clearTimeout(sceneToastTimer);
+  sceneToastTimer = setTimeout(() => {
+    toast.hidden = true;
+  }, 2600);
+}
+
+function initScenesBar() {
+  const bar = document.getElementById("scenes-bar");
+  if (!bar) return;
+  bar.querySelectorAll(".scene-btn").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const scene = btn.getAttribute("data-scene");
+      if (!scene) return;
+      if (navigator.vibrate) {
+        try { navigator.vibrate(10); } catch (_) {}
+      }
+      bar.querySelectorAll(".scene-btn").forEach((b) =>
+        b.setAttribute("aria-pressed", String(b === btn))
+      );
+      send("macro", scene);
+    });
+  });
+}
+
+initScenesBar();
+
+// Module cards: Going Out at top, then Deliveries, Lights, Audio, and Pets at bottom!
+const MODULE_CARDS = ["commute", "buildinglink", "hue", "denon", "litter_robot", "petlibro", "demo"];
 for (const name of MODULE_CARDS) {
   const el = document.createElement("section");
   el.className = "card";
@@ -300,4 +341,8 @@ for (const name of MODULE_CARDS) {
 }
 
 connect();
+
+if ("serviceWorker" in navigator) {
+  navigator.serviceWorker.register("/sw.js").catch(() => {});
+}
 

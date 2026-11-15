@@ -49,3 +49,17 @@ async def test_no_clean_with_cat_inside():
     await mod.handle_action("clean", {}, "c1")
     assert mod.robot.cleans == 0
     assert "cat" in bus.get(mod.module_id)["notice"].lower()
+
+
+@pytest.mark.asyncio
+async def test_guest_pin_protection(monkeypatch):
+    monkeypatch.setenv("GUEST_PIN", "1234")
+    bus, mod = await make("READY")
+    assert mod.initial_state()["pin_required"] is True
+
+    await mod.handle_action("clean", {}, "c1")
+    assert mod.robot.cleans == 0
+    assert "pin" in bus.get(mod.module_id)["notice"].lower()
+
+    await mod.handle_action("clean", {"pin": "1234"}, "c1")
+    assert mod.robot.cleans == 1

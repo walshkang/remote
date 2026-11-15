@@ -13,8 +13,16 @@ export function mount(el, { send, onState }) {
     </div>
 
     <div id="lr-setup" class="callout" hidden>
-      Add <code>LITTER_ROBOT_EMAIL</code> and <code>LITTER_ROBOT_PASSWORD</code>
-      (your Whisker app login) to <code>.env</code> and restart the server.
+      <div class="muted" style="margin-bottom:8px;">
+        Sign in with your Whisker app account or set <code>LITTER_ROBOT_EMAIL</code> / <code>LITTER_ROBOT_PASSWORD</code> in <code>.env</code>:
+      </div>
+      <div class="input-row" style="margin-bottom:8px;">
+        <input id="lr-email" class="text-input" type="email" placeholder="Whisker email" autocomplete="email">
+      </div>
+      <div class="input-row">
+        <input id="lr-password" class="text-input" type="password" placeholder="Password" autocomplete="current-password">
+        <button id="lr-save-creds" class="primary-btn" type="button">Connect</button>
+      </div>
     </div>
     <div id="lr-error" class="muted" style="color:var(--danger); margin-bottom:10px;" hidden></div>
 
@@ -36,6 +44,10 @@ export function mount(el, { send, onState }) {
       </div>
     </div>
 
+    <div id="lr-pin-row" class="input-row" style="margin-bottom:10px;" hidden>
+      <input id="lr-pin" class="text-input" type="password" inputmode="numeric" placeholder="Household PIN required for clean/lock" autocomplete="off">
+    </div>
+
     <button id="lr-clean" class="hold-btn" type="button" aria-label="Hold to start a clean cycle">
       <span class="hold-fill" aria-hidden="true"></span>
       <span class="hold-label" id="lr-clean-label">Hold to clean (1s)</span>
@@ -52,7 +64,25 @@ export function mount(el, { send, onState }) {
   const cleanBtn = $("#lr-clean"), cleanLabel = $("#lr-clean-label");
   const noticeEl = $("#lr-notice"), errEl = $("#lr-error");
   const nightBtn = $("#lr-night"), lockBtn = $("#lr-lock");
+  const saveBtn = $("#lr-save-creds"), emailInput = $("#lr-email"), passInput = $("#lr-password");
+  const pinRow = $("#lr-pin-row"), pinInput = $("#lr-pin");
   let robot = null;
+
+  const getPin = () => (pinInput ? pinInput.value.trim() : "") || localStorage.getItem("remote-guest-pin") || "";
+  if (pinInput) {
+    pinInput.value = localStorage.getItem("remote-guest-pin") || "";
+    pinInput.addEventListener("input", () => {
+      localStorage.setItem("remote-guest-pin", pinInput.value.trim());
+    });
+  }
+
+  saveBtn.addEventListener("click", () => {
+    const email = emailInput.value.trim();
+    const password = passInput.value;
+    if (!email || !password) return;
+    send("litter_robot", "set_credentials", { email, password });
+    passInput.value = "";
+  });
 
   // Press-and-hold (1s) so a pocket tap or scroll can never trigger a cycle accidentally.
   const HOLD_MS = 1000;
@@ -75,7 +105,7 @@ export function mount(el, { send, onState }) {
     }
     holdTimer = setTimeout(() => {
       cancelHold();
-      send("litter_robot", "clean");
+      send("litter_robot", "clean", { pin: getPin() });
       cleanLabel.textContent = "Clean cycle started! ✓";
       if (navigator.vibrate) {
         try { navigator.vibrate([20, 50, 30]); } catch (_) {}
@@ -92,7 +122,7 @@ export function mount(el, { send, onState }) {
       cleanLabel.textContent = "Keep holding…";
       holdTimer = setTimeout(() => {
         cancelHold();
-        send("litter_robot", "clean");
+        send("litter_robot", "clean", { pin: getPin() });
         cleanLabel.textContent = "Clean cycle started! ✓";
       }, HOLD_MS);
     }
@@ -102,10 +132,14 @@ export function mount(el, { send, onState }) {
   nightBtn.addEventListener("click", () =>
     robot && send("litter_robot", "night_light", { on: !robot.night_light }));
   lockBtn.addEventListener("click", () =>
-    robot && send("litter_robot", "panel_lock", { on: !robot.panel_lock }));
+    robot && send("litter_robot", "panel_lock", { on: !robot.panel_lock, pin: getPin() }));
 
   onState("litter_robot", (s) => {
     $("#lr-setup").hidden = Boolean(s.configured);
+    if (pinRow) pinRow.hidden = !s.pin_required;
+    if (pinInput && !pinInput.value && localStorage.getItem("remote-guest-pin")) {
+      pinInput.value = localStorage.getItem("remote-guest-pin") || "";
+    }
     errEl.hidden = !s.error;
     errEl.textContent = s.error || "";
     noticeEl.hidden = !s.notice;
@@ -158,7 +192,9 @@ export function mount(el, { send, onState }) {
 
     // Telemetry: Last Visitor
     $("#lr-weight").textContent = robot.pet_weight ? `${robot.pet_weight} lb` : "–";
-    $("#lr-visitor-time").textContent = robot.last_seen ? `Visited ${robot.last_seen}` : "Weight sensor active";
+    $("#lr-visitor-time").textContent = robot.last_seen
+      ? `Visited ${robot.last_seen}`
+      : (robot.wait_minutes ? `${robot.wait_minutes}m cycle delay` : "Weight sensor active");
 
     const blocked = !robot.online || !robot.power_on || robot.cycling || robot.cat_detected;
     cleanBtn.disabled = blocked;
